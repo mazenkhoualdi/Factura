@@ -10,7 +10,7 @@
 
 # 📖 Présentation
 
-Factura est un prototype frontend développé en **React** permettant de valider l'expérience utilisateur (UX/UI) avant le développement complet de l'application.
+
 
 L'objectif est de reproduire l'ensemble du processus commercial d'une entreprise utilisant **Sage**, en mettant en évidence les relations entre les différents documents afin d'assurer une meilleure traçabilité des transactions.
 
