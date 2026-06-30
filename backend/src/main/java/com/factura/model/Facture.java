@@ -21,7 +21,7 @@ public class Facture {
 
     @OneToOne
     @JoinColumn(name = "attachement_id", unique = true)
-    private Attachement attachement;
+    private Attachement attachement;  // <-- ATTENTION : le nom est "attachement" (sans 't')
 
     @Temporal(TemporalType.DATE)
     private Date date;
