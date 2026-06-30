@@ -3,11 +3,18 @@ package com.factura.controller;
 import com.factura.model.Client;
 import com.factura.service.ClientService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.UUID;
 
@@ -58,6 +65,80 @@ public class ClientController {
             return ResponseEntity.ok(path);
         } catch (IOException e) {
             return ResponseEntity.internalServerError().body("Erreur lors de l'upload du PDF");
+        }
+    }
+
+    // Télécharger le PDF (attachment)
+    @GetMapping("/{id}/pdf")
+    public ResponseEntity<Resource> downloadPdf(@PathVariable UUID id) {
+        try {
+            Client client = clientService.getClientById(id)
+                    .orElseThrow(() -> new RuntimeException("Client non trouvé"));
+
+            if (client.getPdfUrl() == null || client.getPdfUrl().isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            // Essayer avec le chemin relatif d'abord
+            Path filePath = Paths.get(client.getPdfUrl());
+            
+            // Si le fichier n'existe pas, essayer avec le chemin absolu
+            if (!Files.exists(filePath)) {
+                String basePath = System.getProperty("user.dir");
+                filePath = Paths.get(basePath, client.getPdfUrl());
+            }
+            
+            Resource resource = new UrlResource(filePath.toUri());
+
+            if (!resource.exists()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, 
+                            "attachment; filename=\"" + client.getFileName() + "\"")
+                    .body(resource);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // Visualiser le PDF (inline)
+    @GetMapping("/{id}/pdf/view")
+    public ResponseEntity<Resource> viewPdf(@PathVariable UUID id) {
+        try {
+            Client client = clientService.getClientById(id)
+                    .orElseThrow(() -> new RuntimeException("Client non trouvé"));
+
+            if (client.getPdfUrl() == null || client.getPdfUrl().isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            // Essayer avec le chemin relatif d'abord
+            Path filePath = Paths.get(client.getPdfUrl());
+            
+            // Si le fichier n'existe pas, essayer avec le chemin absolu
+            if (!Files.exists(filePath)) {
+                String basePath = System.getProperty("user.dir");
+                filePath = Paths.get(basePath, client.getPdfUrl());
+            }
+            
+            Resource resource = new UrlResource(filePath.toUri());
+
+            if (!resource.exists()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, 
+                            "inline; filename=\"" + client.getFileName() + "\"")
+                    .body(resource);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
         }
     }
 }

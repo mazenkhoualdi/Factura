@@ -28,10 +28,9 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
-import CloseIcon from '@mui/icons-material/Close';       
-import DownloadIcon from '@mui/icons-material/Download';    
-import api from '../../api/api';
-
+import CloseIcon from '@mui/icons-material/Close';
+import DownloadIcon from '@mui/icons-material/Download';
+import api, { downloadPdf, viewPdf } from '../../api/api';
 
 export const ClientsList = () => {
     const { clients, loadClients } = useAppContext();
@@ -78,6 +77,7 @@ export const ClientsList = () => {
     // États pour le PDF
     const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
     const [pdfClient, setPdfClient] = useState(null);
+    const [pdfLoading, setPdfLoading] = useState(false);
 
     useEffect(() => {
         loadClients();
@@ -205,15 +205,54 @@ export const ClientsList = () => {
     };
 
     // ============================================================
-    // VOIR LE PDF
+    // VOIR LE PDF (APERÇU)
     // ============================================================
-    const handleViewPdf = (client) => {
+    const handleViewPdf = async (client) => {
+        if (!client.pdfUrl) {
+            alert('Aucun PDF attaché à ce client.');
+            return;
+        }
+        
         setPdfClient(client);
         setPdfDialogOpen(true);
+        setPdfLoading(true);
+        
+        try {
+            const success = await viewPdf(client.id);
+            setPdfLoading(false);
+            if (success) {
+                // Le PDF s'ouvre dans un nouvel onglet
+                setPdfDialogOpen(false);
+            } else {
+                alert('❌ Erreur lors de l\'ouverture du PDF');
+            }
+        } catch (error) {
+            console.error('Erreur', error);
+            setPdfLoading(false);
+            alert('❌ Erreur lors de l\'ouverture du PDF');
+        }
     };
 
-    const handleDownloadPdf = (client) => {
-        alert(`📄 Téléchargement de ${client.fileName || 'document.pdf'} (simulation)\n\nDans la version finale, le PDF sera téléchargé depuis : ${client.pdfUrl}`);
+    // ============================================================
+    // TÉLÉCHARGER LE PDF
+    // ============================================================
+    const handleDownloadPdf = async (client) => {
+        if (!client.pdfUrl) {
+            alert('Aucun PDF attaché à ce client.');
+            return;
+        }
+        
+        try {
+            const success = await downloadPdf(client.id, client.fileName);
+            if (success) {
+                alert('✅ Téléchargement du PDF démarré !');
+            } else {
+                alert('❌ Erreur lors du téléchargement du PDF');
+            }
+        } catch (error) {
+            console.error('Erreur', error);
+            alert('❌ Erreur lors du téléchargement du PDF');
+        }
     };
 
     return (
@@ -280,6 +319,11 @@ export const ClientsList = () => {
                                             <Tooltip title="Aperçu PDF">
                                                 <IconButton size="small" onClick={() => handleViewPdf(client)}>
                                                     <PictureAsPdfIcon />
+                                                </IconButton>
+                                            </Tooltip>
+                                            <Tooltip title="Télécharger PDF">
+                                                <IconButton size="small" onClick={() => handleDownloadPdf(client)}>
+                                                    <DownloadIcon />
                                                 </IconButton>
                                             </Tooltip>
                                             <Tooltip title="Modifier">
@@ -549,7 +593,12 @@ export const ClientsList = () => {
                                 {selectedClient.pdfUrl && (
                                     <Grid item xs={12}>
                                         <Typography variant="body2" color="text.secondary">Pièce jointe</Typography>
-                                        <Button variant="outlined" size="small" startIcon={<PictureAsPdfIcon />} onClick={() => handleViewPdf(selectedClient)}>
+                                        <Button 
+                                            variant="outlined" 
+                                            size="small" 
+                                            startIcon={<PictureAsPdfIcon />} 
+                                            onClick={() => handleViewPdf(selectedClient)}
+                                        >
                                             {selectedClient.fileName || 'document.pdf'}
                                         </Button>
                                     </Grid>
@@ -558,70 +607,6 @@ export const ClientsList = () => {
                         </DialogContent>
                         <DialogActions>
                             <Button onClick={() => setDetailDialogOpen(false)}>Fermer</Button>
-                        </DialogActions>
-                    </>
-                )}
-            </Dialog>
-
-            {/* ============================================================
-                DIALOGUE D'APERÇU PDF
-                ============================================================ */}
-            <Dialog open={pdfDialogOpen} onClose={() => setPdfDialogOpen(false)} maxWidth="md" fullWidth>
-                {pdfClient && (
-                    <>
-                        <DialogTitle>
-                            Aperçu du PDF
-                            <IconButton
-                                onClick={() => setPdfDialogOpen(false)}
-                                sx={{ position: 'absolute', right: 8, top: 8 }}
-                            >
-                                <CloseIcon />
-                            </IconButton>
-                        </DialogTitle>
-                        <DialogContent dividers>
-                            <Box sx={{ py: 2 }}>
-                                <Typography variant="subtitle1" fontWeight={600}>
-                                    Fichier : {pdfClient.fileName || 'document.pdf'}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                                    Ceci est un aperçu de démonstration. Dans la version finale, le PDF s'affichera ici.
-                                </Typography>
-                                <Box
-                                    sx={{
-                                        mt: 2,
-                                        p: 3,
-                                        border: '1px dashed',
-                                        borderColor: 'divider',
-                                        borderRadius: 2,
-                                        bgcolor: 'background.default',
-                                        textAlign: 'center',
-                                        minHeight: 200,
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                    }}
-                                >
-                                    <PictureAsPdfIcon sx={{ fontSize: 64, color: 'error.main', mb: 2 }} />
-                                    <Typography variant="body1">
-                                        📄 {pdfClient.fileName || 'document.pdf'}
-                                    </Typography>
-                                    <Typography variant="caption" color="text.secondary">
-                                        (fichier PDF factice - aperçu non disponible)
-                                    </Typography>
-                                    <Button
-                                        variant="outlined"
-                                        startIcon={<DownloadIcon />}
-                                        sx={{ mt: 2 }}
-                                        onClick={() => handleDownloadPdf(pdfClient)}
-                                    >
-                                        Télécharger
-                                    </Button>
-                                </Box>
-                            </Box>
-                        </DialogContent>
-                        <DialogActions>
-                            <Button onClick={() => setPdfDialogOpen(false)}>Fermer</Button>
                         </DialogActions>
                     </>
                 )}

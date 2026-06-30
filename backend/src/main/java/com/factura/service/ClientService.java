@@ -5,6 +5,7 @@ import com.factura.repository.ClientRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -54,17 +55,24 @@ public class ClientService {
         Client client = clientRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Client not found"));
 
+        // Créer le dossier uploads/clients si nécessaire
         Path uploadPath = Paths.get(uploadDir);
         if (!Files.exists(uploadPath)) {
             Files.createDirectories(uploadPath);
         }
 
-        String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
-        Path filePath = uploadPath.resolve(fileName);
+        // Nettoyer le nom du fichier (supprimer les caractères spéciaux)
+        String originalFileName = file.getOriginalFilename();
+        String cleanFileName = System.currentTimeMillis() + "_" + originalFileName.replaceAll("[^a-zA-Z0-9.\\-]", "_");
+        Path filePath = uploadPath.resolve(cleanFileName);
+        
+        // Copier le fichier
         Files.copy(file.getInputStream(), filePath);
 
-        client.setPdfUrl(filePath.toString());
-        client.setFileName(file.getOriginalFilename());
+        // Stocker le chemin relatif
+        String relativePath = uploadDir + cleanFileName;
+        client.setPdfUrl(relativePath);
+        client.setFileName(originalFileName);
         clientRepository.save(client);
 
         return filePath.toString();
