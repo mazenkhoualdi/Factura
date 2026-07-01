@@ -1,4 +1,8 @@
 import React from "react";
+import DashboardRoundedIcon from "@mui/icons-material/DashboardRounded";
+import TrendingUpRoundedIcon from "@mui/icons-material/TrendingUpRounded";
+import PieChartRoundedIcon from "@mui/icons-material/PieChartRounded";
+import BarChartRoundedIcon from "@mui/icons-material/BarChartRounded";
 import {
   Grid,
   Card,
@@ -6,19 +10,19 @@ import {
   CardHeader,
   Typography,
   Box,
+  LinearProgress,
+  linearProgressClasses,
+  styled,
 } from "@mui/material";
 import { useAppContext } from "../../context/AppContext";
 import PeopleIcon from "@mui/icons-material/People";
-import BusinessIcon from "@mui/icons-material/Business";
 import DescriptionIcon from "@mui/icons-material/Description";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
+import PendingIcon from "@mui/icons-material/Pending";
 import EuroIcon from "@mui/icons-material/Euro";
 import PaymentsIcon from "@mui/icons-material/Payments";
 import MoneyOffIcon from "@mui/icons-material/MoneyOff";
-import PendingIcon from "@mui/icons-material/Pending";
 import {
-  LineChart,
-  Line,
   BarChart,
   Bar,
   PieChart,
@@ -28,8 +32,78 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip as RechartsTooltip,
+  Legend,
   ResponsiveContainer,
 } from "recharts";
+
+// Barre de progression personnalisée avec couleurs dynamiques
+const CustomLinearProgress = styled(LinearProgress)(({ value }) => ({
+  height: 12,
+  borderRadius: 6,
+  [`&.${linearProgressClasses.colorPrimary}`]: {
+    backgroundColor: "#e0e0e0",
+  },
+  [`& .${linearProgressClasses.bar}`]: {
+    borderRadius: 6,
+    backgroundColor:
+      value >= 80 ? "#2e7d32" : value >= 50 ? "#ed6c02" : "#d32f2f",
+    transition: "background-color 0.3s ease",
+  },
+}));
+
+// Petite carte KPI réutilisable - AMÉLIORÉE
+const KpiCard = ({ label, value, icon, color }) => (
+  <Card
+    sx={{
+      height: "100%",
+      borderRadius: 3,
+      transition: "all 0.3s ease",
+      border: `1px solid ${color}25`,
+      background: (theme) =>
+        `linear-gradient(135deg, ${color}08, ${theme.palette.background.paper})`,
+      "&:hover": {
+        transform: "translateY(-4px)",
+        boxShadow: (theme) => `0 8px 24px ${color}30`,
+        borderColor: color,
+      },
+    }}
+  >
+    <CardContent>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+        }}
+      >
+        <Box>
+          <Typography variant="caption" color="text.secondary" fontWeight={600}>
+            {label}
+          </Typography>
+          <Typography
+            variant="h5"
+            fontWeight={800}
+            sx={{ mt: 0.5, color: color }}
+          >
+            {value}
+          </Typography>
+        </Box>
+        <Box
+          sx={{
+            p: 1.5,
+            borderRadius: 3,
+            bgcolor: `${color}15`,
+            color: color,
+            border: `1px solid ${color}30`,
+            boxShadow: `0 2px 8px ${color}20`,
+          }}
+        >
+          {icon}
+        </Box>
+      </Box>
+    </CardContent>
+  </Card>
+);
 
 export const Dashboard = () => {
   const { clients, devis, factures, paiements } = useAppContext();
@@ -38,7 +112,11 @@ export const Dashboard = () => {
   const totalPaid = paiements.reduce((sum, p) => sum + (p.amount || 0), 0);
   const totalRemaining = totalFactured - totalPaid;
 
-  const kpis = [
+  const encaissementPercentage =
+    totalFactured > 0 ? Math.round((totalPaid / totalFactured) * 100) : 0;
+
+  // Groupe 1 : indicateurs d'activité (compteurs)
+  const activityKpis = [
     {
       label: "Clients",
       value: clients.length,
@@ -58,6 +136,16 @@ export const Dashboard = () => {
       color: "#9c27b0",
     },
     {
+      label: "Dossiers en cours",
+      value: devis.filter((d) => d.status === "pending").length,
+      icon: <PendingIcon />,
+      color: "#607d8b",
+    },
+  ];
+
+  // Groupe 2 : indicateurs financiers (montants)
+  const financialKpis = [
+    {
       label: "Total facturé",
       value: `${totalFactured.toFixed(2)} €`,
       icon: <EuroIcon />,
@@ -75,122 +163,475 @@ export const Dashboard = () => {
       icon: <MoneyOffIcon />,
       color: "#d32f2f",
     },
-    {
-      label: "Dossiers en cours",
-      value: devis.filter((d) => d.status === "pending").length,
-      icon: <PendingIcon />,
-      color: "#ed6c02",
-    },
   ];
 
-  const devisStatusData = [
-    {
-      name: "Acceptés",
-      value: devis.filter((d) => d.status === "accepted").length,
-    },
-    {
-      name: "En attente",
-      value: devis.filter((d) => d.status === "pending").length,
-    },
-    {
-      name: "Refusés",
-      value: devis.filter((d) => d.status === "refused").length,
-    },
-    {
-      name: "Validés",
-      value: devis.filter((d) => d.status === "validated").length,
-    },
-  ];
+  // Couleur fixe par statut
+  const STATUS_COLORS = {
+    accepted: "#4caf50",
+    pending: "#ff9800",
+    refused: "#f44336",
+    validated: "#2196f3",
+  };
 
-  const COLORS = ["#4caf50", "#ff9800", "#f44336", "#2196f3"];
+  // Labels d'affichage pour les statuts
+  const STATUS_LABELS = {
+    accepted: "Acceptés",
+    pending: "En attente",
+    refused: "Refusés",
+    validated: "Validés",
+  };
+
+  // Préparer les données pour le graphique
+  const devisStatusData = Object.keys(STATUS_COLORS)
+    .map((status) => ({
+      name: STATUS_LABELS[status],
+      status: status,
+      value: devis.filter((d) => d.status === status).length,
+    }))
+    .filter((entry) => entry.value > 0);
+
+  const progressColor =
+    encaissementPercentage >= 80
+      ? "#2e7d32"
+      : encaissementPercentage >= 50
+        ? "#ed6c02"
+        : "#d32f2f";
 
   return (
     <Box>
-      <Typography variant="h4" fontWeight={700} gutterBottom>
-        Tableau de bord
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Vue d'ensemble de votre activité commerciale
-      </Typography>
+      {/* Header amélioré */}
+      <Box
+        sx={{
+          mb: 4,
+          p: 3.5,
+          borderRadius: 4,
+          background: (theme) =>
+            `linear-gradient(135deg, ${theme.palette.primary.main}18, ${theme.palette.primary.light}06, ${theme.palette.background.paper})`,
+          border: (theme) => `2px solid ${theme.palette.primary.main}25`,
+          textAlign: "center",
+          boxShadow: (theme) => `0 4px 20px ${theme.palette.primary.main}20`,
+          position: "relative",
+          overflow: "hidden",
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: "4px",
+            background: (theme) =>
+              `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.success.main}, ${theme.palette.primary.main})`,
+            backgroundSize: "200% 100%",
+            animation: "gradientMove 3s linear infinite",
+          },
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: 1,
+            mb: 1,
+          }}
+        >
+          <DashboardRoundedIcon color="primary" sx={{ fontSize: 36 }} />
 
+          <Typography variant="h4" fontWeight={800} color="primary">
+            Tableau de bord
+          </Typography>
+        </Box>
+
+        <Typography
+          variant="body1"
+          color="text.secondary"
+          sx={{
+            maxWidth: 700,
+            mx: "auto",
+            lineHeight: 1.7,
+          }}
+        >
+          Bienvenue sur <strong>Factura</strong>. Gérez efficacement vos
+          clients, sociétés, devis, factures et paiements depuis une interface
+          centralisée.
+        </Typography>
+      </Box>
+
+      {/* Section 1 : KPIs (Activité + Finances) à gauche, jauge à droite centrée verticalement */}
       <Grid container spacing={3}>
-        {kpis.map((kpi, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
-            <Card sx={{ height: "100%" }}>
-              <CardContent>
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "flex-start",
-                  }}
-                >
-                  <Box>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      fontWeight={500}
-                    >
-                      {kpi.label}
-                    </Typography>
-                    <Typography variant="h5" fontWeight={700} sx={{ mt: 0.5 }}>
-                      {kpi.value}
-                    </Typography>
-                  </Box>
-                  <Box
-                    sx={{
-                      p: 1,
-                      borderRadius: 2,
-                      bgcolor: `${kpi.color}15`,
-                      color: kpi.color,
-                    }}
-                  >
-                    {kpi.icon}
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
+        {/* Colonne gauche : les deux lignes de KPIs empilées */}
+        <Grid item xs={12} md={8}>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              mb: 3,
+            }}
+          >
+            <Box
+              sx={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 1,
+                background: (theme) => `${theme.palette.primary.main}08`,
+                px: 3,
+                py: 1,
+                borderRadius: 50,
+                border: (theme) => `1px solid ${theme.palette.primary.main}20`,
+              }}
+            >
+              <TrendingUpRoundedIcon color="primary" fontSize="small" />
+              <Typography
+                variant="h6"
+                fontWeight={700}
+                color="primary"
+                sx={{ letterSpacing: 0.5 }}
+              >
+                Performance commerciale
+              </Typography>
+            </Box>
+          </Box>
+          <Grid container spacing={3}>
+            {activityKpis.map((kpi, index) => (
+              <Grid item xs={12} sm={6} md={3} key={`activity-${index}`}>
+                <KpiCard {...kpi} />
+              </Grid>
+            ))}
           </Grid>
-        ))}
-      </Grid>
 
-      <Grid container spacing={3} sx={{ mt: 1 }}>
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardHeader title="Répartition des devis par statut" />
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              mt: 4,
+              mb: 3,
+            }}
+          >
+            <Box
+              sx={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 1,
+                background: (theme) => `${theme.palette.success.main}08`,
+                px: 3,
+                py: 1,
+                borderRadius: 50,
+                border: (theme) => `1px solid ${theme.palette.success.main}20`,
+              }}
+            >
+              <EuroIcon color="success" fontSize="small" />
+              <Typography
+                variant="h6"
+                fontWeight={700}
+                color="success.main"
+                sx={{ letterSpacing: 0.5 }}
+              >
+                Aperçu financier
+              </Typography>
+            </Box>
+          </Box>
+          <Grid container spacing={3}>
+            {financialKpis.map((kpi, index) => (
+              <Grid item xs={12} sm={4} key={`financial-${index}`}>
+                <KpiCard {...kpi} />
+              </Grid>
+            ))}
+          </Grid>
+        </Grid>
+
+        {/* Colonne droite : jauge du taux d'encaissement - AMÉLIORÉE */}
+        <Grid item xs={12} md={4}>
+          <Card
+            sx={{
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              borderRadius: 4,
+              border: (theme) => `2px solid ${theme.palette.success.main}25`,
+              background: (theme) =>
+                `linear-gradient(135deg, ${theme.palette.success.main}05, ${theme.palette.background.paper})`,
+              boxShadow: (theme) =>
+                `0 4px 20px ${theme.palette.success.main}15`,
+              transition: "all 0.3s ease",
+              "&:hover": {
+                transform: "translateY(-4px)",
+                boxShadow: (theme) =>
+                  `0 8px 30px ${theme.palette.success.main}25`,
+              },
+            }}
+          >
             <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={devisStatusData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) =>
-                      `${name}: ${(percent * 100).toFixed(0)}%`
-                    }
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 1,
+                  mb: 2,
+                  background: (theme) => `${theme.palette.success.main}08`,
+                  px: 2,
+                  py: 1,
+                  borderRadius: 50,
+                  border: (theme) =>
+                    `1px solid ${theme.palette.success.main}20`,
+                  width: "fit-content",
+                  mx: "auto",
+                }}
+              >
+                <TrendingUpRoundedIcon color="success" />
+                <Typography variant="h6" fontWeight={700} color="success.main">
+                  Taux d'encaissement
+                </Typography>
+              </Box>
+
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                align="center"
+                sx={{
+                  mb: 3,
+                  lineHeight: 1.7,
+                  background: (theme) => `${theme.palette.grey[100]}60`,
+                  p: 1.5,
+                  borderRadius: 2,
+                }}
+              >
+                <strong>{totalPaid.toFixed(2)} €</strong> encaissés sur{" "}
+                <strong>{totalFactured.toFixed(2)} €</strong> facturés
+              </Typography>
+
+              <Typography
+                variant="h2"
+                fontWeight={800}
+                align="center"
+                sx={{
+                  color: progressColor,
+                  mb: 2,
+                  textShadow: `0 2px 8px ${progressColor}30`,
+                }}
+              >
+                {encaissementPercentage}%
+              </Typography>
+
+              <CustomLinearProgress
+                variant="determinate"
+                value={Math.min(encaissementPercentage, 100)}
+                sx={{
+                  height: 12,
+                  borderRadius: 6,
+                  mb: 1,
+                }}
+              />
+
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  mt: 2,
+                  pt: 2,
+                  borderTop: (theme) => `1px solid ${theme.palette.divider}`,
+                }}
+              >
+                <Box sx={{ textAlign: "left" }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    fontWeight={600}
                   >
-                    {devisStatusData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={COLORS[index % COLORS.length]}
-                      />
-                    ))}
-                  </Pie>
-                  <RechartsTooltip />
-                </PieChart>
-              </ResponsiveContainer>
+                    Encaissé
+                  </Typography>
+                  <Typography fontWeight={700} color="success.main">
+                    {totalPaid.toFixed(2)} €
+                  </Typography>
+                </Box>
+
+                <Box sx={{ textAlign: "right" }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    fontWeight={600}
+                  >
+                    Facturé
+                  </Typography>
+                  <Typography fontWeight={700} color="primary">
+                    {totalFactured.toFixed(2)} €
+                  </Typography>
+                </Box>
+              </Box>
             </CardContent>
           </Card>
         </Grid>
+      </Grid>
+
+      {/* Section 4 : Graphiques côte à côte */}
+      <Grid container spacing={15} sx={{ mt: 10 }}>
+        {/* ==================== Répartition des devis - AMÉLIORÉE ==================== */}
         <Grid item xs={12} md={6}>
-          <Card>
-            <CardHeader title="Comparaison facturé / encaissé / reste" />
+          <Card
+            sx={{
+              height: "100%",
+              borderRadius: 4,
+              border: "2px solid",
+              borderColor: "primary.main",
+              background: (theme) =>
+                `linear-gradient(135deg, ${theme.palette.primary.main}04, ${theme.palette.background.paper})`,
+              boxShadow: (theme) =>
+                `0 4px 20px ${theme.palette.primary.main}15`,
+              transition: "all 0.3s ease",
+              "&:hover": {
+                transform: "translateY(-6px)",
+                boxShadow: (theme) =>
+                  `0 10px 35px ${theme.palette.primary.main}25`,
+                borderColor: "primary.dark",
+              },
+            }}
+          >
             <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  mb: 1,
+                  background: (theme) => `${theme.palette.primary.main}08`,
+                  px: 2,
+                  py: 1,
+                  borderRadius: 50,
+                  border: (theme) =>
+                    `1px solid ${theme.palette.primary.main}20`,
+                  width: "fit-content",
+                }}
+              >
+                <PieChartRoundedIcon color="primary" />
+
+                <Typography variant="h6" fontWeight={700} color="primary.main">
+                  Répartition des devis
+                </Typography>
+              </Box>
+
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ mb: 3, mt: 1 }}
+              >
+                Visualisez la répartition de vos devis selon leur statut.
+              </Typography>
+
+              {devisStatusData.length === 0 ? (
+                <Box
+                  sx={{
+                    height: 280,
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  <Typography color="text.secondary">
+                    Aucun devis disponible
+                  </Typography>
+                </Box>
+              ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={devisStatusData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="45%"
+                      innerRadius={55}
+                      outerRadius={95}
+                      paddingAngle={4}
+                      label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+                    >
+                      {devisStatusData.map((entry) => (
+                        <Cell
+                          key={entry.status}
+                          fill={STATUS_COLORS[entry.status]}
+                        />
+                      ))}
+                    </Pie>
+
+                    <RechartsTooltip
+                      formatter={(value, name) => [`${value} devis`, name]}
+                      contentStyle={{
+                        borderRadius: 12,
+                        border: "none",
+                        boxShadow: "0 6px 18px rgba(0,0,0,.15)",
+                      }}
+                    />
+
+                    <Legend
+                      verticalAlign="bottom"
+                      wrapperStyle={{
+                        paddingTop: 15,
+                        fontSize: 13,
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* ==================== Comparaison financière - AMÉLIORÉE ==================== */}
+        <Grid item xs={12} md={6}>
+          <Card
+            sx={{
+              height: "100%",
+              borderRadius: 4,
+              border: "2px solid",
+              borderColor: "success.main",
+              background: (theme) =>
+                `linear-gradient(135deg, ${theme.palette.success.main}04, ${theme.palette.background.paper})`,
+              boxShadow: (theme) =>
+                `0 4px 20px ${theme.palette.success.main}15`,
+              transition: "all 0.3s ease",
+              "&:hover": {
+                transform: "translateY(-6px)",
+                boxShadow: (theme) =>
+                  `0 10px 35px ${theme.palette.success.main}25`,
+                borderColor: "success.dark",
+              },
+            }}
+          >
+            <CardContent>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  mb: 1,
+                  background: (theme) => `${theme.palette.success.main}08`,
+                  px: 2,
+                  py: 1,
+                  borderRadius: 50,
+                  border: (theme) =>
+                    `1px solid ${theme.palette.success.main}20`,
+                  width: "fit-content",
+                }}
+              >
+                <BarChartRoundedIcon color="success" />
+
+                <Typography variant="h6" fontWeight={700} color="success.main">
+                  Comparaison financière
+                </Typography>
+              </Box>
+
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ mb: 3, mt: 1 }}
+              >
+                Comparez les montants facturés, encaissés et restant à
+                percevoir.
+              </Typography>
+
+              <ResponsiveContainer width="100%" height={300}>
                 <BarChart
                   data={[
                     { name: "Facturé", value: totalFactured },
@@ -198,13 +639,22 @@ export const Dashboard = () => {
                     { name: "Reste", value: totalRemaining },
                   ]}
                 >
-                  <CartesianGrid strokeDasharray="3 3" />
+                  <CartesianGrid strokeDasharray="4 4" vertical={false} />
+
                   <XAxis dataKey="name" />
+
                   <YAxis />
+
                   <RechartsTooltip
                     formatter={(value) => `${value.toFixed(2)} €`}
+                    contentStyle={{
+                      borderRadius: 12,
+                      border: "none",
+                      boxShadow: "0 6px 18px rgba(0,0,0,.15)",
+                    }}
                   />
-                  <Bar dataKey="value" fill="#1976d2" radius={[4, 4, 0, 0]} />
+
+                  <Bar dataKey="value" fill="#3b82f6" radius={[8, 8, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
