@@ -13,7 +13,6 @@ const api = axios.create({
 // FONCTIONS PDF GÉNÉRIQUES
 // ============================================================
 
-// Fonction générique pour télécharger un PDF
 export const downloadPdf = async (endpoint, id, fileName) => {
   try {
     const response = await api.get(`/${endpoint}/${id}/pdf`, {
@@ -36,7 +35,6 @@ export const downloadPdf = async (endpoint, id, fileName) => {
   }
 };
 
-// Fonction générique pour visualiser un PDF
 export const viewPdf = async (endpoint, id) => {
   try {
     const response = await api.get(`/${endpoint}/${id}/pdf/view`, {
@@ -57,7 +55,7 @@ export const viewPdf = async (endpoint, id) => {
 };
 
 // ============================================================
-// FONCTIONS SPÉCIFIQUES PAR MODULE (pour faciliter l'utilisation)
+// FONCTIONS SPÉCIFIQUES PAR MODULE
 // ============================================================
 
 // Clients
