@@ -61,12 +61,14 @@ public class DevisService {
             Files.createDirectories(uploadPath);
         }
 
-        String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
-        Path filePath = uploadPath.resolve(fileName);
+        String originalFileName = file.getOriginalFilename();
+        String cleanFileName = System.currentTimeMillis() + "_" + originalFileName.replaceAll("[^a-zA-Z0-9.\\-]", "_");
+        Path filePath = uploadPath.resolve(cleanFileName);
         Files.copy(file.getInputStream(), filePath);
 
-        devis.setPdfUrl(filePath.toString());
-        devis.setFileName(file.getOriginalFilename());
+        String relativePath = uploadDir + cleanFileName;
+        devis.setPdfUrl(relativePath);
+        devis.setFileName(originalFileName);
         devisRepository.save(devis);
 
         return filePath.toString();
