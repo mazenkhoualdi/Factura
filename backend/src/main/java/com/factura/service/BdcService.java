@@ -29,10 +29,6 @@ public class BdcService {
     }
 
     public BDC createBdc(BDC bdc) {
-        // Vérifier que le devis lié a le statut "accepted"
-        if (bdc.getDevis() != null && !"accepted".equals(bdc.getDevis().getStatus().toString())) {
-            throw new RuntimeException("Le devis doit avoir le statut 'Accepté' pour créer un BDC");
-        }
         return bdcRepository.save(bdc);
     }
 
@@ -64,12 +60,14 @@ public class BdcService {
             Files.createDirectories(uploadPath);
         }
 
-        String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
-        Path filePath = uploadPath.resolve(fileName);
+        String originalFileName = file.getOriginalFilename();
+        String cleanFileName = System.currentTimeMillis() + "_" + originalFileName.replaceAll("[^a-zA-Z0-9.\\-]", "_");
+        Path filePath = uploadPath.resolve(cleanFileName);
         Files.copy(file.getInputStream(), filePath);
 
-        bdc.setPdfUrl(filePath.toString());
-        bdc.setFileName(file.getOriginalFilename());
+        String relativePath = uploadDir + cleanFileName;
+        bdc.setPdfUrl(relativePath);
+        bdc.setFileName(originalFileName);
         bdcRepository.save(bdc);
 
         return filePath.toString();
