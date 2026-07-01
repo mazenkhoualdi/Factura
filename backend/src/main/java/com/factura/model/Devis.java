@@ -22,8 +22,11 @@ public class Devis {
     @JoinColumn(name = "client_id")
     private Client client;
 
+    @Column(name = "client_name")
+    private String clientName;
+
     @Column(name = "client_type")
-    private String clientType; // "client" ou "society"
+    private String clientType;
 
     @Temporal(TemporalType.DATE)
     private Date date;
@@ -59,6 +62,13 @@ public class Devis {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = new Date();
+    }
+
+    // ============================================================
+    // MÉTHODE GETTER POUR clientId (AJOUTÉE)
+    // ============================================================
+    public UUID getClientId() {
+        return client != null ? client.getId() : null;
     }
 
     public enum DevisStatus {

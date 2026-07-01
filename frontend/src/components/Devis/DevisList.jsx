@@ -137,10 +137,18 @@ export const DevisList = () => {
 
     setAddLoading(true);
     try {
+      // Trouver le client pour récupérer son nom
+      const selectedClient = clients.find((c) => c.id === newDevis.clientId);
+      const clientName = selectedClient
+        ? `${selectedClient.firstName} ${selectedClient.lastName}`
+        : "";
+
       const data = {
         ...newDevis,
         amount: parseFloat(newDevis.amount) || 0,
+        clientName: clientName, // <-- AJOUT POUR LE NOM DU CLIENT
       };
+
       const response = await api.post("/devis", data);
 
       if (selectedFile) {
@@ -204,10 +212,20 @@ export const DevisList = () => {
 
     setEditLoading(true);
     try {
+      // Trouver le client pour récupérer son nom
+      const selectedClient = clients.find(
+        (c) => c.id === editFormData.clientId,
+      );
+      const clientName = selectedClient
+        ? `${selectedClient.firstName} ${selectedClient.lastName}`
+        : "";
+
       const data = {
         ...editFormData,
         amount: parseFloat(editFormData.amount) || 0,
+        clientName: clientName, // <-- AJOUT POUR LE NOM DU CLIENT
       };
+
       await api.put(`/devis/${editingDevis.id}`, data);
 
       if (editFile) {
@@ -397,7 +415,8 @@ export const DevisList = () => {
                     <TableCell>{d.number}</TableCell>
                     <TableCell>
                       {d.clientName ||
-                        d.client?.firstName + " " + d.client?.lastName}
+                        d.client?.firstName + " " + d.client?.lastName ||
+                        "Client inconnu"}
                     </TableCell>
                     <TableCell>
                       {d.date
@@ -856,7 +875,8 @@ export const DevisList = () => {
                     {selectedDevis.clientName ||
                       selectedDevis.client?.firstName +
                         " " +
-                        selectedDevis.client?.lastName}
+                        selectedDevis.client?.lastName ||
+                      "Client inconnu"}
                   </Typography>
                 </Grid>
                 <Grid item xs={12} sm={6}>
