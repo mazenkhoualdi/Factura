@@ -5,21 +5,21 @@ const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
   const [clients, setClients] = useState([]);
+  const [societies, setSocieties] = useState([]); // <-- AJOUT SOCIÉTÉS
   const [devis, setDevis] = useState([]);
   const [bdc, setBdc] = useState([]);
   const [bl, setBl] = useState([]);
   const [attachements, setAttachements] = useState([]);
   const [factures, setFactures] = useState([]);
   const [paiements, setPaiements] = useState([]);
-  const [transactions, setTransactions] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const loadClients = async () => {
     setLoading(true);
     try {
       const response = await api.get("/clients");
-      setClients(response.data);
+      setClients(response.data || []);
     } catch (error) {
       console.error("Erreur chargement clients", error);
     } finally {
@@ -27,10 +27,20 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const loadSocieties = async () => {
+    // <-- AJOUT
+    try {
+      const response = await api.get("/societes");
+      setSocieties(response.data || []);
+    } catch (error) {
+      console.error("Erreur chargement sociétés", error);
+    }
+  };
+
   const loadDevis = async () => {
     try {
       const response = await api.get("/devis");
-      setDevis(response.data);
+      setDevis(response.data || []);
     } catch (error) {
       console.error("Erreur chargement devis", error);
     }
@@ -39,7 +49,7 @@ export const AppProvider = ({ children }) => {
   const loadBdc = async () => {
     try {
       const response = await api.get("/bdc");
-      setBdc(response.data);
+      setBdc(response.data || []);
     } catch (error) {
       console.error("Erreur chargement BDC", error);
     }
@@ -48,7 +58,7 @@ export const AppProvider = ({ children }) => {
   const loadBl = async () => {
     try {
       const response = await api.get("/bl");
-      setBl(response.data);
+      setBl(response.data || []);
     } catch (error) {
       console.error("Erreur chargement BL", error);
     }
@@ -57,7 +67,7 @@ export const AppProvider = ({ children }) => {
   const loadAttachements = async () => {
     try {
       const response = await api.get("/attachements");
-      setAttachements(response.data);
+      setAttachements(response.data || []);
     } catch (error) {
       console.error("Erreur chargement attachements", error);
     }
@@ -66,7 +76,7 @@ export const AppProvider = ({ children }) => {
   const loadFactures = async () => {
     try {
       const response = await api.get("/factures");
-      setFactures(response.data);
+      setFactures(response.data || []);
     } catch (error) {
       console.error("Erreur chargement factures", error);
     }
@@ -75,7 +85,7 @@ export const AppProvider = ({ children }) => {
   const loadPaiements = async () => {
     try {
       const response = await api.get("/paiements");
-      setPaiements(response.data);
+      setPaiements(response.data || []);
     } catch (error) {
       console.error("Erreur chargement paiements", error);
     }
@@ -84,7 +94,7 @@ export const AppProvider = ({ children }) => {
   const loadNotifications = async () => {
     try {
       const response = await api.get("/notifications");
-      setNotifications(response.data);
+      setNotifications(response.data || []);
     } catch (error) {
       console.error("Erreur chargement notifications", error);
     }
@@ -93,6 +103,7 @@ export const AppProvider = ({ children }) => {
   const loadAllData = async () => {
     await Promise.all([
       loadClients(),
+      loadSocieties(), // <-- AJOUT
       loadDevis(),
       loadBdc(),
       loadBl(),
@@ -109,16 +120,17 @@ export const AppProvider = ({ children }) => {
 
   const value = {
     clients,
+    societies, // <-- AJOUT
     devis,
     bdc,
     bl,
     attachements,
     factures,
     paiements,
-    transactions,
     notifications,
     loading,
     loadClients,
+    loadSocieties, // <-- AJOUT
     loadDevis,
     loadBdc,
     loadBl,

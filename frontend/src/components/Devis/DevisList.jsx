@@ -57,16 +57,18 @@ const getStatusColor = (status) => {
 };
 
 export const DevisList = () => {
-  const { clients, loadClients } = useAppContext();
+  const { clients, societies, loadClients } = useAppContext();
   const [devis, setDevis] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
 
   // États pour l'ajout
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [entityType, setEntityType] = useState("client"); // 'client' ou 'society'
   const [newDevis, setNewDevis] = useState({
     number: "",
     clientId: "",
+    societyId: "",
     date: "",
     expirationDate: "",
     description: "",
@@ -80,9 +82,11 @@ export const DevisList = () => {
   // États pour la modification
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingDevis, setEditingDevis] = useState(null);
+  const [editEntityType, setEditEntityType] = useState("client");
   const [editFormData, setEditFormData] = useState({
     number: "",
     clientId: "",
+    societyId: "",
     date: "",
     expirationDate: "",
     description: "",
@@ -130,23 +134,43 @@ export const DevisList = () => {
   // AJOUTER UN DEVIS
   // ============================================================
   const handleAddDevis = async () => {
-    if (!newDevis.clientId) {
+    // Vérifier si un client ou une société est sélectionné
+    if (entityType === "client" && !newDevis.clientId) {
       alert("Veuillez sélectionner un client.");
+      return;
+    }
+    if (entityType === "society" && !newDevis.societyId) {
+      alert("Veuillez sélectionner une société.");
       return;
     }
 
     setAddLoading(true);
     try {
-      // Trouver le client pour récupérer son nom
-      const selectedClient = clients.find((c) => c.id === newDevis.clientId);
-      const clientName = selectedClient
-        ? `${selectedClient.firstName} ${selectedClient.lastName}`
-        : "";
+      let clientName = "";
+      let clientId = null;
+      let societyId = null;
+
+      if (entityType === "client") {
+        const selectedClient = clients.find((c) => c.id === newDevis.clientId);
+        clientName = selectedClient
+          ? `${selectedClient.firstName} ${selectedClient.lastName}`
+          : "";
+        clientId = newDevis.clientId;
+      } else {
+        const selectedSociety = societies.find(
+          (s) => s.id === newDevis.societyId,
+        );
+        clientName = selectedSociety ? selectedSociety.name : "";
+        societyId = newDevis.societyId;
+      }
 
       const data = {
         ...newDevis,
         amount: parseFloat(newDevis.amount) || 0,
-        clientName: clientName, // <-- AJOUT POUR LE NOM DU CLIENT
+        clientName: clientName,
+        clientId: clientId,
+        societyId: societyId,
+        clientType: entityType,
       };
 
       const response = await api.post("/devis", data);
@@ -164,6 +188,7 @@ export const DevisList = () => {
       setNewDevis({
         number: "",
         clientId: "",
+        societyId: "",
         date: "",
         expirationDate: "",
         description: "",
@@ -171,6 +196,7 @@ export const DevisList = () => {
         status: "pending",
         comments: "",
       });
+      setEntityType("client");
       setSelectedFile(null);
       alert("✅ Devis ajouté avec succès !");
     } catch (error) {
@@ -186,9 +212,15 @@ export const DevisList = () => {
   // ============================================================
   const handleOpenEdit = (devisItem) => {
     setEditingDevis(devisItem);
+
+    // Déterminer le type d'entité
+    const type = devisItem.clientType || "client";
+    setEditEntityType(type);
+
     setEditFormData({
       number: devisItem.number || "",
       clientId: devisItem.clientId || devisItem.client?.id || "",
+      societyId: devisItem.societyId || "",
       date: devisItem.date
         ? new Date(devisItem.date).toISOString().split("T")[0]
         : "",
@@ -205,25 +237,45 @@ export const DevisList = () => {
   };
 
   const handleEditDevis = async () => {
-    if (!editFormData.clientId) {
+    // Vérifier si un client ou une société est sélectionné
+    if (editEntityType === "client" && !editFormData.clientId) {
       alert("Veuillez sélectionner un client.");
+      return;
+    }
+    if (editEntityType === "society" && !editFormData.societyId) {
+      alert("Veuillez sélectionner une société.");
       return;
     }
 
     setEditLoading(true);
     try {
-      // Trouver le client pour récupérer son nom
-      const selectedClient = clients.find(
-        (c) => c.id === editFormData.clientId,
-      );
-      const clientName = selectedClient
-        ? `${selectedClient.firstName} ${selectedClient.lastName}`
-        : "";
+      let clientName = "";
+      let clientId = null;
+      let societyId = null;
+
+      if (editEntityType === "client") {
+        const selectedClient = clients.find(
+          (c) => c.id === editFormData.clientId,
+        );
+        clientName = selectedClient
+          ? `${selectedClient.firstName} ${selectedClient.lastName}`
+          : "";
+        clientId = editFormData.clientId;
+      } else {
+        const selectedSociety = societies.find(
+          (s) => s.id === editFormData.societyId,
+        );
+        clientName = selectedSociety ? selectedSociety.name : "";
+        societyId = editFormData.societyId;
+      }
 
       const data = {
         ...editFormData,
         amount: parseFloat(editFormData.amount) || 0,
-        clientName: clientName, // <-- AJOUT POUR LE NOM DU CLIENT
+        clientName: clientName,
+        clientId: clientId,
+        societyId: societyId,
+        clientType: editEntityType,
       };
 
       await api.put(`/devis/${editingDevis.id}`, data);
@@ -330,6 +382,7 @@ export const DevisList = () => {
     setNewDevis({
       number: `DEV-${String(devis.length + 1).padStart(4, "0")}`,
       clientId: "",
+      societyId: "",
       date: new Date().toISOString().split("T")[0],
       expirationDate: new Date(Date.now() + 30 * 86400000)
         .toISOString()
@@ -339,6 +392,7 @@ export const DevisList = () => {
       status: "pending",
       comments: "",
     });
+    setEntityType("client");
     setSelectedFile(null);
     setAddDialogOpen(true);
   };
@@ -392,7 +446,8 @@ export const DevisList = () => {
             <TableHead>
               <TableRow>
                 <TableCell>Numéro</TableCell>
-                <TableCell>Client</TableCell>
+                <TableCell>Client / Société</TableCell>
+                <TableCell>Type</TableCell>
                 <TableCell>Date</TableCell>
                 <TableCell>Expiration</TableCell>
                 <TableCell>Montant</TableCell>
@@ -403,7 +458,7 @@ export const DevisList = () => {
             <TableBody>
               {filteredDevis.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} align="center">
+                  <TableCell colSpan={8} align="center">
                     <Typography color="text.secondary">
                       Aucun devis trouvé.
                     </Typography>
@@ -417,6 +472,15 @@ export const DevisList = () => {
                       {d.clientName ||
                         d.client?.firstName + " " + d.client?.lastName ||
                         "Client inconnu"}
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={
+                          d.clientType === "society" ? "Société" : "Client"
+                        }
+                        size="small"
+                        color={d.clientType === "society" ? "info" : "default"}
+                      />
                     </TableCell>
                     <TableCell>
                       {d.date
@@ -515,19 +579,51 @@ export const DevisList = () => {
             </Grid>
             <Grid item xs={12} sm={6}>
               <FormControl fullWidth>
-                <InputLabel>Client</InputLabel>
+                <InputLabel>Type d'entité</InputLabel>
                 <Select
-                  value={newDevis.clientId}
-                  onChange={(e) =>
-                    setNewDevis({ ...newDevis, clientId: e.target.value })
-                  }
-                  label="Client"
+                  value={entityType}
+                  onChange={(e) => {
+                    setEntityType(e.target.value);
+                    setNewDevis({ ...newDevis, clientId: "", societyId: "" });
+                  }}
+                  label="Type d'entité"
                 >
-                  {clients.map((c) => (
-                    <MenuItem key={c.id} value={c.id}>
-                      {c.firstName} {c.lastName}
-                    </MenuItem>
-                  ))}
+                  <MenuItem value="client">Client (personne physique)</MenuItem>
+                  <MenuItem value="society">Société (personne morale)</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>
+                  {entityType === "client" ? "Client" : "Société"}
+                </InputLabel>
+                <Select
+                  value={
+                    entityType === "client"
+                      ? newDevis.clientId
+                      : newDevis.societyId
+                  }
+                  onChange={(e) => {
+                    if (entityType === "client") {
+                      setNewDevis({ ...newDevis, clientId: e.target.value });
+                    } else {
+                      setNewDevis({ ...newDevis, societyId: e.target.value });
+                    }
+                  }}
+                  label={entityType === "client" ? "Client" : "Société"}
+                >
+                  {entityType === "client"
+                    ? clients.map((c) => (
+                        <MenuItem key={c.id} value={c.id}>
+                          {c.firstName} {c.lastName}
+                        </MenuItem>
+                      ))
+                    : societies.map((s) => (
+                        <MenuItem key={s.id} value={s.id}>
+                          {s.name}
+                        </MenuItem>
+                      ))}
                 </Select>
               </FormControl>
             </Grid>
@@ -663,22 +759,61 @@ export const DevisList = () => {
             </Grid>
             <Grid item xs={12} sm={6}>
               <FormControl fullWidth>
-                <InputLabel>Client</InputLabel>
+                <InputLabel>Type d'entité</InputLabel>
                 <Select
-                  value={editFormData.clientId}
-                  onChange={(e) =>
+                  value={editEntityType}
+                  onChange={(e) => {
+                    setEditEntityType(e.target.value);
                     setEditFormData({
                       ...editFormData,
-                      clientId: e.target.value,
-                    })
-                  }
-                  label="Client"
+                      clientId: "",
+                      societyId: "",
+                    });
+                  }}
+                  label="Type d'entité"
                 >
-                  {clients.map((c) => (
-                    <MenuItem key={c.id} value={c.id}>
-                      {c.firstName} {c.lastName}
-                    </MenuItem>
-                  ))}
+                  <MenuItem value="client">Client (personne physique)</MenuItem>
+                  <MenuItem value="society">Société (personne morale)</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>
+                  {editEntityType === "client" ? "Client" : "Société"}
+                </InputLabel>
+                <Select
+                  value={
+                    editEntityType === "client"
+                      ? editFormData.clientId
+                      : editFormData.societyId
+                  }
+                  onChange={(e) => {
+                    if (editEntityType === "client") {
+                      setEditFormData({
+                        ...editFormData,
+                        clientId: e.target.value,
+                      });
+                    } else {
+                      setEditFormData({
+                        ...editFormData,
+                        societyId: e.target.value,
+                      });
+                    }
+                  }}
+                  label={editEntityType === "client" ? "Client" : "Société"}
+                >
+                  {editEntityType === "client"
+                    ? clients.map((c) => (
+                        <MenuItem key={c.id} value={c.id}>
+                          {c.firstName} {c.lastName}
+                        </MenuItem>
+                      ))
+                    : societies.map((s) => (
+                        <MenuItem key={s.id} value={s.id}>
+                          {s.name}
+                        </MenuItem>
+                      ))}
                 </Select>
               </FormControl>
             </Grid>
@@ -869,7 +1004,7 @@ export const DevisList = () => {
               <Grid container spacing={2}>
                 <Grid item xs={12}>
                   <Typography variant="body2" color="text.secondary">
-                    Client
+                    Client / Société
                   </Typography>
                   <Typography>
                     {selectedDevis.clientName ||
@@ -878,6 +1013,24 @@ export const DevisList = () => {
                         selectedDevis.client?.lastName ||
                       "Client inconnu"}
                   </Typography>
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography variant="body2" color="text.secondary">
+                    Type
+                  </Typography>
+                  <Chip
+                    label={
+                      selectedDevis.clientType === "society"
+                        ? "Société"
+                        : "Client"
+                    }
+                    size="small"
+                    color={
+                      selectedDevis.clientType === "society"
+                        ? "info"
+                        : "default"
+                    }
+                  />
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <Typography variant="body2" color="text.secondary">
