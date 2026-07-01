@@ -1,423 +1,914 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
-    Box,
-    Card,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    TextField,
-    Button,
-    IconButton,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    Grid,
-    Chip,
-    Tooltip,
-    Typography,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import SearchIcon from '@mui/icons-material/Search';
-import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import api from '../../api/api';
+  Box,
+  Card,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  Button,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Grid,
+  Chip,
+  Tooltip,
+  Typography,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+} from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import SearchIcon from "@mui/icons-material/Search";
+import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
+import DownloadIcon from "@mui/icons-material/Download";
+import AttachFileIcon from "@mui/icons-material/AttachFile";
+import CloseIcon from "@mui/icons-material/Close";
+import api, { viewFacturePdf, downloadFacturePdf } from "../../api/api";
 
 const getStatusLabel = (status) => {
-    const map = {
-        unpaid: 'Non payée',
-        partial: 'Partiellement payée',
-        paid: 'Payée',
-        late: 'En retard',
-    };
-    return map[status] || status;
+  const map = {
+    unpaid: "Non payée",
+    partial: "Partiellement payée",
+    paid: "Payée",
+    late: "En retard",
+  };
+  return map[status] || status;
 };
 
 const getStatusColor = (status) => {
-    const map = {
-        unpaid: '#f44336',
-        partial: '#ff9800',
-        paid: '#4caf50',
-        late: '#f44336',
-    };
-    return map[status] || '#9e9e9e';
+  const map = {
+    unpaid: "#f44336",
+    partial: "#ff9800",
+    paid: "#4caf50",
+    late: "#f44336",
+  };
+  return map[status] || "#9e9e9e";
 };
 
 export const InvoicesList = () => {
-    const [invoices, setInvoices] = useState([]);
-    const [attachments, setAttachments] = useState([]);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [dialogOpen, setDialogOpen] = useState(false);
-    const [isEdit, setIsEdit] = useState(false);
-    const [formData, setFormData] = useState({
-        number: '',
-        attachmentId: '',
-        date: '',
-        description: '',
-        amount: '',
-        status: 'unpaid',
-        comments: '',
+  const [invoices, setInvoices] = useState([]);
+  const [attachments, setAttachments] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  // États pour l'ajout
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [newInvoice, setNewInvoice] = useState({
+    number: "",
+    attachmentId: "",
+    date: "",
+    description: "",
+    amount: "",
+    status: "unpaid",
+    comments: "",
+  });
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [addLoading, setAddLoading] = useState(false);
+
+  // États pour la modification
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    number: "",
+    attachmentId: "",
+    date: "",
+    description: "",
+    amount: "",
+    status: "unpaid",
+    comments: "",
+  });
+  const [editFile, setEditFile] = useState(null);
+  const [editLoading, setEditLoading] = useState(false);
+
+  // États pour la suppression
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingInvoice, setDeletingInvoice] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // États pour le détail
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+
+  const loadInvoices = async () => {
+    setLoading(true);
+    try {
+      const response = await api.get("/factures");
+      setInvoices(response.data || []);
+    } catch (error) {
+      console.error("Erreur chargement factures", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadAttachments = async () => {
+    try {
+      const response = await api.get("/attachements");
+      setAttachments(response.data || []);
+    } catch (error) {
+      console.error("Erreur chargement attachements", error);
+    }
+  };
+
+  useEffect(() => {
+    loadInvoices();
+    loadAttachments();
+  }, []);
+
+  const filteredInvoices = invoices.filter(
+    (d) =>
+      d.number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      d.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      d.attachmentNumber?.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
+
+  // ============================================================
+  // AJOUTER UNE FACTURE
+  // ============================================================
+  const handleAddInvoice = async () => {
+    if (!newInvoice.attachmentId) {
+      alert("Veuillez sélectionner un attachement.");
+      return;
+    }
+
+    setAddLoading(true);
+    try {
+      const data = {
+        ...newInvoice,
+        amount: parseFloat(newInvoice.amount) || 0,
+      };
+      const response = await api.post("/factures", data);
+
+      if (selectedFile) {
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+        await api.post(`/factures/${response.data.id}/pdf`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+      }
+
+      await loadInvoices();
+      setAddDialogOpen(false);
+      setNewInvoice({
+        number: "",
+        attachmentId: "",
+        date: "",
+        description: "",
+        amount: "",
+        status: "unpaid",
+        comments: "",
+      });
+      setSelectedFile(null);
+      alert("✅ Facture ajoutée avec succès !");
+    } catch (error) {
+      console.error("Erreur ajout facture", error);
+      alert("❌ Erreur lors de l'ajout de la facture");
+    } finally {
+      setAddLoading(false);
+    }
+  };
+
+  // ============================================================
+  // MODIFIER UNE FACTURE
+  // ============================================================
+  const handleOpenEdit = (invoiceItem) => {
+    setEditingInvoice(invoiceItem);
+    setEditFormData({
+      number: invoiceItem.number || "",
+      attachmentId:
+        invoiceItem.attachmentId || invoiceItem.attachement?.id || "",
+      date: invoiceItem.date
+        ? new Date(invoiceItem.date).toISOString().split("T")[0]
+        : "",
+      description: invoiceItem.description || "",
+      amount: invoiceItem.amount || "",
+      status: invoiceItem.status || "unpaid",
+      comments: invoiceItem.comments || "",
     });
-    const [selectedFile, setSelectedFile] = useState(null);
-    const [detailOpen, setDetailOpen] = useState(false);
-    const [selectedItem, setSelectedItem] = useState(null);
-    const [loading, setLoading] = useState(false);
+    setEditFile(null);
+    setEditDialogOpen(true);
+  };
 
-    const loadInvoices = async () => {
-        setLoading(true);
-        try {
-            const response = await api.get('/factures');
-            setInvoices(response.data || []);
-        } catch (error) {
-            console.error('Erreur chargement factures', error);
-        } finally {
-            setLoading(false);
-        }
-    };
+  const handleEditInvoice = async () => {
+    if (!editFormData.attachmentId) {
+      alert("Veuillez sélectionner un attachement.");
+      return;
+    }
 
-    const loadAttachments = async () => {
-        try {
-            const response = await api.get('/attachements');
-            setAttachments(response.data || []);
-        } catch (error) {
-            console.error('Erreur chargement attachements', error);
-        }
-    };
+    setEditLoading(true);
+    try {
+      const data = {
+        ...editFormData,
+        amount: parseFloat(editFormData.amount) || 0,
+      };
+      await api.put(`/factures/${editingInvoice.id}`, data);
 
-    useEffect(() => {
-        loadInvoices();
-        loadAttachments();
-    }, []);
-
-    const filteredInvoices = invoices.filter(d =>
-        d.number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        d.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        d.attachmentNumber?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-    const handleOpenCreate = () => {
-        setIsEdit(false);
-        setFormData({
-            number: `FAC-${String(invoices.length + 1).padStart(4, '0')}`,
-            attachmentId: '',
-            date: new Date().toISOString().split('T')[0],
-            description: '',
-            amount: '',
-            status: 'unpaid',
-            comments: '',
+      if (editFile) {
+        const formData = new FormData();
+        formData.append("file", editFile);
+        await api.post(`/factures/${editingInvoice.id}/pdf`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
         });
-        setSelectedFile(null);
-        setDialogOpen(true);
-    };
+      }
 
-    const handleOpenEdit = (item) => {
-        setIsEdit(true);
-        setFormData({
-            number: item.number || '',
-            attachmentId: item.attachmentId || item.attachement?.id || '',
-            date: item.date ? new Date(item.date).toISOString().split('T')[0] : '',
-            description: item.description || '',
-            amount: item.amount || '',
-            status: item.status || 'unpaid',
-            comments: item.comments || '',
-        });
-        setSelectedFile(null);
-        setDialogOpen(true);
-    };
+      await loadInvoices();
+      setEditDialogOpen(false);
+      setEditingInvoice(null);
+      setEditFile(null);
+      alert("✅ Facture modifiée avec succès !");
+    } catch (error) {
+      console.error("Erreur modification facture", error);
+      alert("❌ Erreur lors de la modification de la facture");
+    } finally {
+      setEditLoading(false);
+    }
+  };
 
-    const handleSubmit = async () => {
-        setLoading(true);
-        try {
-            const data = {
-                ...formData,
-                amount: parseFloat(formData.amount) || 0,
-            };
-            let response;
-            if (isEdit) {
-                const itemToEdit = invoices.find(d => d.number === formData.number);
-                if (itemToEdit) {
-                    response = await api.put(`/factures/${itemToEdit.id}`, data);
-                }
-            } else {
-                response = await api.post('/factures', data);
-            }
-            if (response && selectedFile) {
-                const formData2 = new FormData();
-                formData2.append('file', selectedFile);
-                await api.post(`/factures/${response.data.id}/pdf`, formData2, {
-                    headers: { 'Content-Type': 'multipart/form-data' }
-                });
-            }
-            await loadInvoices();
-            setDialogOpen(false);
-        } catch (error) {
-            console.error('Erreur sauvegarde facture', error);
-            alert('Erreur lors de la sauvegarde de la facture');
-        } finally {
-            setLoading(false);
-        }
-    };
+  // ============================================================
+  // SUPPRIMER UNE FACTURE
+  // ============================================================
+  const handleOpenDelete = (invoiceItem) => {
+    setDeletingInvoice(invoiceItem);
+    setDeleteDialogOpen(true);
+  };
 
-    const handleDelete = async (item) => {
-        if (window.confirm(`Êtes-vous sûr de vouloir supprimer la facture ${item.number} ?`)) {
-            try {
-                await api.delete(`/factures/${item.id}`);
-                await loadInvoices();
-            } catch (error) {
-                console.error('Erreur suppression facture', error);
-                alert('Erreur lors de la suppression');
-            }
-        }
-    };
+  const handleDeleteInvoice = async () => {
+    setDeleteLoading(true);
+    try {
+      await api.delete(`/factures/${deletingInvoice.id}`);
+      await loadInvoices();
+      setDeleteDialogOpen(false);
+      setDeletingInvoice(null);
+      alert("✅ Facture supprimée avec succès !");
+    } catch (error) {
+      console.error("Erreur suppression facture", error);
+      alert("❌ Erreur lors de la suppression de la facture");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
 
-    const handlePreview = (item) => {
-        alert(`📄 Aperçu du PDF : ${item.fileName || 'document.pdf'}\n(PDF factice - aperçu non disponible)`);
-    };
+  // ============================================================
+  // VOIR LES DÉTAILS
+  // ============================================================
+  const handleViewDetail = (invoiceItem) => {
+    setSelectedInvoice(invoiceItem);
+    setDetailDialogOpen(true);
+  };
 
-    const handleViewDetail = (item) => {
-        setSelectedItem(item);
-        setDetailOpen(true);
-    };
+  // ============================================================
+  // VOIR LE PDF
+  // ============================================================
+  const handleViewPdf = async (invoiceItem) => {
+    if (!invoiceItem.pdfUrl) {
+      alert("Aucun PDF attaché à cette facture.");
+      return;
+    }
 
-    return (
-        <Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3, flexWrap: 'wrap', gap: 2 }}>
-                <Typography variant="h4" fontWeight={700}>Factures</Typography>
-                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                    <TextField
-                        size="small"
-                        placeholder="Rechercher une facture..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        sx={{ width: 250 }}
-                        InputProps={{ startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} /> }}
-                    />
-                    <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenCreate}>
-                        Nouvelle facture
-                    </Button>
-                </Box>
-            </Box>
+    try {
+      const success = await viewFacturePdf(invoiceItem.id);
+      if (!success) {
+        alert("❌ Erreur lors de l'ouverture du PDF");
+      }
+    } catch (error) {
+      console.error("Erreur", error);
+      alert("❌ Erreur lors de l'ouverture du PDF");
+    }
+  };
 
-            {loading && <Typography>Chargement...</Typography>}
+  // ============================================================
+  // TÉLÉCHARGER LE PDF
+  // ============================================================
+  const handleDownloadPdf = async (invoiceItem) => {
+    if (!invoiceItem.pdfUrl) {
+      alert("Aucun PDF attaché à cette facture.");
+      return;
+    }
 
-            <Card>
-                <TableContainer>
-                    <Table>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>Numéro</TableCell>
-                                <TableCell>Attachement source</TableCell>
-                                <TableCell>Date</TableCell>
-                                <TableCell>Description</TableCell>
-                                <TableCell>Montant</TableCell>
-                                <TableCell>Statut</TableCell>
-                                <TableCell align="right">Actions</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {filteredInvoices.map((d) => (
-                                <TableRow key={d.id} hover>
-                                    <TableCell>{d.number}</TableCell>
-                                    <TableCell>{d.attachmentNumber || d.attachement?.number}</TableCell>
-                                    <TableCell>{d.date ? new Date(d.date).toLocaleDateString('fr-FR') : ''}</TableCell>
-                                    <TableCell>{d.description}</TableCell>
-                                    <TableCell>{d.amount ? `${d.amount.toLocaleString()} €` : ''}</TableCell>
-                                    <TableCell>
-                                        <Chip
-                                            label={getStatusLabel(d.status)}
-                                            size="small"
-                                            sx={{ bgcolor: getStatusColor(d.status) + '20', color: getStatusColor(d.status), fontWeight: 600 }}
-                                        />
-                                    </TableCell>
-                                    <TableCell align="right">
-                                        <Tooltip title="Voir détails">
-                                            <IconButton size="small" onClick={() => handleViewDetail(d)}>
-                                                <VisibilityIcon />
-                                            </IconButton>
-                                        </Tooltip>
-                                        <Tooltip title="Aperçu PDF">
-                                            <IconButton size="small" onClick={() => handlePreview(d)}>
-                                                <PictureAsPdfIcon />
-                                            </IconButton>
-                                        </Tooltip>
-                                        <Tooltip title="Modifier">
-                                            <IconButton size="small" onClick={() => handleOpenEdit(d)}>
-                                                <EditIcon />
-                                            </IconButton>
-                                        </Tooltip>
-                                        <Tooltip title="Supprimer">
-                                            <IconButton size="small" color="error" onClick={() => handleDelete(d)}>
-                                                <DeleteIcon />
-                                            </IconButton>
-                                        </Tooltip>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-            </Card>
+    try {
+      const success = await downloadFacturePdf(
+        invoiceItem.id,
+        invoiceItem.fileName,
+      );
+      if (success) {
+        alert("✅ Téléchargement du PDF démarré !");
+      } else {
+        alert("❌ Erreur lors du téléchargement du PDF");
+      }
+    } catch (error) {
+      console.error("Erreur", error);
+      alert("❌ Erreur lors du téléchargement du PDF");
+    }
+  };
 
-            {/* Dialogue d'ajout/modification */}
-            <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
-                <DialogTitle>{isEdit ? 'Modifier' : 'Nouvelle'} facture</DialogTitle>
-                <DialogContent>
-                    <Grid container spacing={2} sx={{ mt: 0.5 }}>
-                        <Grid item xs={12} sm={6}>
-                            <TextField label="Numéro" fullWidth value={formData.number} disabled />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <FormControl fullWidth>
-                                <InputLabel>Attachement source</InputLabel>
-                                <Select
-                                    value={formData.attachmentId}
-                                    onChange={(e) => {
-                                        const att = attachments.find(d => d.id === e.target.value);
-                                        setFormData({
-                                            ...formData,
-                                            attachmentId: e.target.value,
-                                            amount: att?.amount || '',
-                                        });
-                                    }}
-                                    label="Attachement source"
-                                >
-                                    {attachments.map((d) => (
-                                        <MenuItem key={d.id} value={d.id}>{d.number}</MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                label="Date"
-                                type="date"
-                                fullWidth
-                                value={formData.date}
-                                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                                InputLabelProps={{ shrink: true }}
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                label="Montant (€)"
-                                type="number"
-                                fullWidth
-                                value={formData.amount}
-                                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                            />
-                        </Grid>
-                        <Grid item xs={12}>
-                            <TextField
-                                label="Description"
-                                fullWidth
-                                multiline
-                                rows={2}
-                                value={formData.description}
-                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <FormControl fullWidth>
-                                <InputLabel>Statut</InputLabel>
-                                <Select
-                                    value={formData.status}
-                                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                    label="Statut"
-                                >
-                                    <MenuItem value="unpaid">Non payée</MenuItem>
-                                    <MenuItem value="partial">Partiellement payée</MenuItem>
-                                    <MenuItem value="paid">Payée</MenuItem>
-                                    <MenuItem value="late">En retard</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                label="Commentaires"
-                                fullWidth
-                                multiline
-                                rows={2}
-                                value={formData.comments}
-                                onChange={(e) => setFormData({ ...formData, comments: e.target.value })}
-                            />
-                        </Grid>
-                        <Grid item xs={12}>
-                            <Button variant="outlined" component="label">
-                                Pièce jointe (PDF)
-                                <input type="file" accept=".pdf" hidden onChange={(e) => setSelectedFile(e.target.files[0])} />
-                            </Button>
-                            {selectedFile && <Chip label={selectedFile.name} sx={{ ml: 1 }} />}
-                        </Grid>
-                    </Grid>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setDialogOpen(false)} disabled={loading}>Annuler</Button>
-                    <Button variant="contained" onClick={handleSubmit} disabled={loading}>
-                        {loading ? 'Enregistrement...' : 'Enregistrer'}
-                    </Button>
-                </DialogActions>
-            </Dialog>
+  // ============================================================
+  // OPEN CREATE DIALOG
+  // ============================================================
+  const handleOpenCreate = () => {
+    setNewInvoice({
+      number: `FAC-${String(invoices.length + 1).padStart(4, "0")}`,
+      attachmentId: "",
+      date: new Date().toISOString().split("T")[0],
+      description: "",
+      amount: "",
+      status: "unpaid",
+      comments: "",
+    });
+    setSelectedFile(null);
+    setAddDialogOpen(true);
+  };
 
-            {/* Dialogue de détail */}
-            <Dialog open={detailOpen} onClose={() => setDetailOpen(false)} maxWidth="sm" fullWidth>
-                {selectedItem && (
-                    <>
-                        <DialogTitle>{selectedItem.number}</DialogTitle>
-                        <DialogContent>
-                            <Grid container spacing={2}>
-                                <Grid item xs={12}>
-                                    <Typography variant="body2" color="text.secondary">Attachement source</Typography>
-                                    <Typography>{selectedItem.attachmentNumber || selectedItem.attachement?.number}</Typography>
-                                </Grid>
-                                <Grid item xs={12} sm={6}>
-                                    <Typography variant="body2" color="text.secondary">Date</Typography>
-                                    <Typography>{selectedItem.date ? new Date(selectedItem.date).toLocaleDateString('fr-FR') : ''}</Typography>
-                                </Grid>
-                                <Grid item xs={12} sm={6}>
-                                    <Typography variant="body2" color="text.secondary">Montant</Typography>
-                                    <Typography>{selectedItem.amount ? `${selectedItem.amount.toLocaleString()} €` : '-'}</Typography>
-                                </Grid>
-                                <Grid item xs={12}>
-                                    <Typography variant="body2" color="text.secondary">Description</Typography>
-                                    <Typography>{selectedItem.description || '-'}</Typography>
-                                </Grid>
-                                <Grid item xs={12} sm={6}>
-                                    <Typography variant="body2" color="text.secondary">Statut</Typography>
-                                    <Chip
-                                        label={getStatusLabel(selectedItem.status)}
-                                        size="small"
-                                        sx={{ bgcolor: getStatusColor(selectedItem.status) + '20', color: getStatusColor(selectedItem.status) }}
-                                    />
-                                </Grid>
-                                <Grid item xs={12} sm={6}>
-                                    <Typography variant="body2" color="text.secondary">Commentaires</Typography>
-                                    <Typography>{selectedItem.comments || 'Aucun'}</Typography>
-                                </Grid>
-                                {selectedItem.pdfUrl && (
-                                    <Grid item xs={12}>
-                                        <Typography variant="body2" color="text.secondary">Pièce jointe</Typography>
-                                        <Button variant="outlined" size="small" startIcon={<PictureAsPdfIcon />} onClick={() => handlePreview(selectedItem)}>
-                                            {selectedItem.fileName || 'document.pdf'}
-                                        </Button>
-                                    </Grid>
-                                )}
-                            </Grid>
-                        </DialogContent>
-                        <DialogActions>
-                            <Button onClick={() => setDetailOpen(false)}>Fermer</Button>
-                        </DialogActions>
-                    </>
-                )}
-            </Dialog>
+  return (
+    <Box>
+      {/* ============================================================
+                EN-TÊTE
+                ============================================================ */}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          mb: 3,
+          flexWrap: "wrap",
+          gap: 2,
+        }}
+      >
+        <Typography variant="h4" fontWeight={700}>
+          Factures
+        </Typography>
+        <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+          <TextField
+            size="small"
+            placeholder="Rechercher une facture..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            sx={{ width: 250 }}
+            InputProps={{
+              startAdornment: (
+                <SearchIcon sx={{ mr: 1, color: "text.secondary" }} />
+              ),
+            }}
+          />
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleOpenCreate}
+          >
+            Nouvelle facture
+          </Button>
         </Box>
-    );
+      </Box>
+
+      {/* ============================================================
+                TABLEAU
+                ============================================================ */}
+      <Card>
+        <TableContainer>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Numéro</TableCell>
+                <TableCell>Attachement source</TableCell>
+                <TableCell>Date</TableCell>
+                <TableCell>Description</TableCell>
+                <TableCell>Montant</TableCell>
+                <TableCell>Statut</TableCell>
+                <TableCell align="right">Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredInvoices.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} align="center">
+                    <Typography color="text.secondary">
+                      Aucune facture trouvée.
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredInvoices.map((d) => (
+                  <TableRow key={d.id} hover>
+                    <TableCell>{d.number}</TableCell>
+                    <TableCell>
+                      {d.attachmentNumber || d.attachement?.number}
+                    </TableCell>
+                    <TableCell>
+                      {d.date
+                        ? new Date(d.date).toLocaleDateString("fr-FR")
+                        : ""}
+                    </TableCell>
+                    <TableCell>{d.description}</TableCell>
+                    <TableCell>
+                      {d.amount ? `${d.amount.toLocaleString()} €` : ""}
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={getStatusLabel(d.status)}
+                        size="small"
+                        sx={{
+                          bgcolor: getStatusColor(d.status) + "20",
+                          color: getStatusColor(d.status),
+                          fontWeight: 600,
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell align="right">
+                      <Tooltip title="Voir détails">
+                        <IconButton
+                          size="small"
+                          onClick={() => handleViewDetail(d)}
+                        >
+                          <VisibilityIcon />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Aperçu PDF">
+                        <IconButton
+                          size="small"
+                          onClick={() => handleViewPdf(d)}
+                        >
+                          <PictureAsPdfIcon />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Télécharger PDF">
+                        <IconButton
+                          size="small"
+                          onClick={() => handleDownloadPdf(d)}
+                        >
+                          <DownloadIcon />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Modifier">
+                        <IconButton
+                          size="small"
+                          onClick={() => handleOpenEdit(d)}
+                        >
+                          <EditIcon />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Supprimer">
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={() => handleOpenDelete(d)}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Card>
+
+      {/* ============================================================
+                DIALOGUE D'AJOUT
+                ============================================================ */}
+      <Dialog
+        open={addDialogOpen}
+        onClose={() => setAddDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Nouvelle facture</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 0.5 }}>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Numéro"
+                fullWidth
+                value={newInvoice.number}
+                disabled
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Attachement source</InputLabel>
+                <Select
+                  value={newInvoice.attachmentId}
+                  onChange={(e) => {
+                    const att = attachments.find(
+                      (d) => d.id === e.target.value,
+                    );
+                    setNewInvoice({
+                      ...newInvoice,
+                      attachmentId: e.target.value,
+                      amount: att?.amount || "",
+                    });
+                  }}
+                  label="Attachement source"
+                >
+                  {attachments.map((d) => (
+                    <MenuItem key={d.id} value={d.id}>
+                      {d.number}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Date"
+                type="date"
+                fullWidth
+                value={newInvoice.date}
+                onChange={(e) =>
+                  setNewInvoice({ ...newInvoice, date: e.target.value })
+                }
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Montant (€)"
+                type="number"
+                fullWidth
+                value={newInvoice.amount}
+                onChange={(e) =>
+                  setNewInvoice({ ...newInvoice, amount: e.target.value })
+                }
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                label="Description"
+                fullWidth
+                multiline
+                rows={2}
+                value={newInvoice.description}
+                onChange={(e) =>
+                  setNewInvoice({ ...newInvoice, description: e.target.value })
+                }
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Statut</InputLabel>
+                <Select
+                  value={newInvoice.status}
+                  onChange={(e) =>
+                    setNewInvoice({ ...newInvoice, status: e.target.value })
+                  }
+                  label="Statut"
+                >
+                  <MenuItem value="unpaid">Non payée</MenuItem>
+                  <MenuItem value="partial">Partiellement payée</MenuItem>
+                  <MenuItem value="paid">Payée</MenuItem>
+                  <MenuItem value="late">En retard</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Commentaires"
+                fullWidth
+                multiline
+                rows={2}
+                value={newInvoice.comments}
+                onChange={(e) =>
+                  setNewInvoice({ ...newInvoice, comments: e.target.value })
+                }
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <Button
+                variant="outlined"
+                component="label"
+                startIcon={<AttachFileIcon />}
+              >
+                Pièce jointe (PDF)
+                <input
+                  type="file"
+                  accept=".pdf"
+                  hidden
+                  onChange={(e) => setSelectedFile(e.target.files[0])}
+                />
+              </Button>
+              {selectedFile && (
+                <Chip label={selectedFile.name} sx={{ ml: 1 }} />
+              )}
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAddDialogOpen(false)} disabled={addLoading}>
+            Annuler
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleAddInvoice}
+            disabled={addLoading}
+          >
+            {addLoading ? "Ajout..." : "Ajouter"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ============================================================
+                DIALOGUE DE MODIFICATION
+                ============================================================ */}
+      <Dialog
+        open={editDialogOpen}
+        onClose={() => setEditDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Modifier la facture</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 0.5 }}>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Numéro"
+                fullWidth
+                value={editFormData.number}
+                disabled
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Attachement source</InputLabel>
+                <Select
+                  value={editFormData.attachmentId}
+                  onChange={(e) => {
+                    const att = attachments.find(
+                      (d) => d.id === e.target.value,
+                    );
+                    setEditFormData({
+                      ...editFormData,
+                      attachmentId: e.target.value,
+                      amount: att?.amount || "",
+                    });
+                  }}
+                  label="Attachement source"
+                >
+                  {attachments.map((d) => (
+                    <MenuItem key={d.id} value={d.id}>
+                      {d.number}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Date"
+                type="date"
+                fullWidth
+                value={editFormData.date}
+                onChange={(e) =>
+                  setEditFormData({ ...editFormData, date: e.target.value })
+                }
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Montant (€)"
+                type="number"
+                fullWidth
+                value={editFormData.amount}
+                onChange={(e) =>
+                  setEditFormData({ ...editFormData, amount: e.target.value })
+                }
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                label="Description"
+                fullWidth
+                multiline
+                rows={2}
+                value={editFormData.description}
+                onChange={(e) =>
+                  setEditFormData({
+                    ...editFormData,
+                    description: e.target.value,
+                  })
+                }
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Statut</InputLabel>
+                <Select
+                  value={editFormData.status}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, status: e.target.value })
+                  }
+                  label="Statut"
+                >
+                  <MenuItem value="unpaid">Non payée</MenuItem>
+                  <MenuItem value="partial">Partiellement payée</MenuItem>
+                  <MenuItem value="paid">Payée</MenuItem>
+                  <MenuItem value="late">En retard</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Commentaires"
+                fullWidth
+                multiline
+                rows={2}
+                value={editFormData.comments}
+                onChange={(e) =>
+                  setEditFormData({ ...editFormData, comments: e.target.value })
+                }
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <Button
+                variant="outlined"
+                component="label"
+                startIcon={<AttachFileIcon />}
+              >
+                Nouvelle pièce jointe (PDF)
+                <input
+                  type="file"
+                  accept=".pdf"
+                  hidden
+                  onChange={(e) => setEditFile(e.target.files[0])}
+                />
+              </Button>
+              {editFile && <Chip label={editFile.name} sx={{ ml: 1 }} />}
+              {editingInvoice?.fileName && !editFile && (
+                <Chip
+                  label={`Actuel: ${editingInvoice.fileName}`}
+                  sx={{ ml: 1 }}
+                  variant="outlined"
+                />
+              )}
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setEditDialogOpen(false)}
+            disabled={editLoading}
+          >
+            Annuler
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleEditInvoice}
+            disabled={editLoading}
+          >
+            {editLoading ? "Enregistrement..." : "Enregistrer"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ============================================================
+                DIALOGUE DE SUPPRESSION
+                ============================================================ */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+      >
+        <DialogTitle>Confirmer la suppression</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Êtes-vous sûr de vouloir supprimer la facture{" "}
+            <strong>{deletingInvoice?.number}</strong> ?
+          </Typography>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ mt: 1, display: "block" }}
+          >
+            Cette action est irréversible.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setDeleteDialogOpen(false)}
+            disabled={deleteLoading}
+          >
+            Annuler
+          </Button>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={handleDeleteInvoice}
+            disabled={deleteLoading}
+          >
+            {deleteLoading ? "Suppression..." : "Supprimer"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ============================================================
+                DIALOGUE DE DÉTAIL
+                ============================================================ */}
+      <Dialog
+        open={detailDialogOpen}
+        onClose={() => setDetailDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        {selectedInvoice && (
+          <>
+            <DialogTitle>
+              {selectedInvoice.number}
+              <IconButton
+                onClick={() => setDetailDialogOpen(false)}
+                sx={{ position: "absolute", right: 8, top: 8 }}
+              >
+                <CloseIcon />
+              </IconButton>
+            </DialogTitle>
+            <DialogContent>
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <Typography variant="body2" color="text.secondary">
+                    Attachement source
+                  </Typography>
+                  <Typography>
+                    {selectedInvoice.attachmentNumber ||
+                      selectedInvoice.attachement?.number}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="body2" color="text.secondary">
+                    Date
+                  </Typography>
+                  <Typography>
+                    {selectedInvoice.date
+                      ? new Date(selectedInvoice.date).toLocaleDateString(
+                          "fr-FR",
+                        )
+                      : ""}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="body2" color="text.secondary">
+                    Montant
+                  </Typography>
+                  <Typography>
+                    {selectedInvoice.amount
+                      ? `${selectedInvoice.amount.toLocaleString()} €`
+                      : "-"}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography variant="body2" color="text.secondary">
+                    Description
+                  </Typography>
+                  <Typography>{selectedInvoice.description || "-"}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="body2" color="text.secondary">
+                    Statut
+                  </Typography>
+                  <Chip
+                    label={getStatusLabel(selectedInvoice.status)}
+                    size="small"
+                    sx={{
+                      bgcolor: getStatusColor(selectedInvoice.status) + "20",
+                      color: getStatusColor(selectedInvoice.status),
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="body2" color="text.secondary">
+                    Commentaires
+                  </Typography>
+                  <Typography>{selectedInvoice.comments || "Aucun"}</Typography>
+                </Grid>
+                {selectedInvoice.pdfUrl && (
+                  <Grid item xs={12}>
+                    <Typography variant="body2" color="text.secondary">
+                      Pièce jointe
+                    </Typography>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<PictureAsPdfIcon />}
+                      onClick={() => handleViewPdf(selectedInvoice)}
+                    >
+                      {selectedInvoice.fileName || "document.pdf"}
+                    </Button>
+                  </Grid>
+                )}
+              </Grid>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setDetailDialogOpen(false)}>Fermer</Button>
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
+    </Box>
+  );
 };
