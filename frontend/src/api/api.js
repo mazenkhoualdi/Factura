@@ -9,14 +9,17 @@ const api = axios.create({
   },
 });
 
-// Fonction pour télécharger un PDF
-export const downloadPdf = async (id, fileName) => {
+// ============================================================
+// FONCTIONS PDF GÉNÉRIQUES
+// ============================================================
+
+// Fonction générique pour télécharger un PDF
+export const downloadPdf = async (endpoint, id, fileName) => {
   try {
-    const response = await api.get(`/clients/${id}/pdf`, {
+    const response = await api.get(`/${endpoint}/${id}/pdf`, {
       responseType: "blob",
     });
 
-    // Créer un lien de téléchargement
     const url = window.URL.createObjectURL(new Blob([response.data]));
     const link = document.createElement("a");
     link.href = url;
@@ -28,30 +31,67 @@ export const downloadPdf = async (id, fileName) => {
 
     return true;
   } catch (error) {
-    console.error("Erreur téléchargement PDF", error);
+    console.error(`Erreur téléchargement PDF (${endpoint})`, error);
     return false;
   }
 };
 
-// Fonction pour visualiser un PDF (ouvre dans un nouvel onglet)
-export const viewPdf = async (id) => {
+// Fonction générique pour visualiser un PDF
+export const viewPdf = async (endpoint, id) => {
   try {
-    const response = await api.get(`/clients/${id}/pdf/view`, {
+    const response = await api.get(`/${endpoint}/${id}/pdf/view`, {
       responseType: "blob",
     });
 
     const url = window.URL.createObjectURL(
-      new Blob([response.data], { type: "application/pdf" })
+      new Blob([response.data], { type: "application/pdf" }),
     );
     window.open(url, "_blank");
-    // Nettoyer l'URL après un délai
     setTimeout(() => window.URL.revokeObjectURL(url), 1000);
 
     return true;
   } catch (error) {
-    console.error("Erreur visualisation PDF", error);
+    console.error(`Erreur visualisation PDF (${endpoint})`, error);
     return false;
   }
 };
+
+// ============================================================
+// FONCTIONS SPÉCIFIQUES PAR MODULE (pour faciliter l'utilisation)
+// ============================================================
+
+// Clients
+export const downloadClientPdf = (id, fileName) =>
+  downloadPdf("clients", id, fileName);
+export const viewClientPdf = (id) => viewPdf("clients", id);
+
+// Devis
+export const downloadDevisPdf = (id, fileName) =>
+  downloadPdf("devis", id, fileName);
+export const viewDevisPdf = (id) => viewPdf("devis", id);
+
+// BDC
+export const downloadBdcPdf = (id, fileName) =>
+  downloadPdf("bdc", id, fileName);
+export const viewBdcPdf = (id) => viewPdf("bdc", id);
+
+// BL
+export const downloadBlPdf = (id, fileName) => downloadPdf("bl", id, fileName);
+export const viewBlPdf = (id) => viewPdf("bl", id);
+
+// Attachements
+export const downloadAttachementPdf = (id, fileName) =>
+  downloadPdf("attachements", id, fileName);
+export const viewAttachementPdf = (id) => viewPdf("attachements", id);
+
+// Factures
+export const downloadFacturePdf = (id, fileName) =>
+  downloadPdf("factures", id, fileName);
+export const viewFacturePdf = (id) => viewPdf("factures", id);
+
+// Paiements
+export const downloadPaiementPdf = (id, fileName) =>
+  downloadPdf("paiements", id, fileName);
+export const viewPaiementPdf = (id) => viewPdf("paiements", id);
 
 export default api;
