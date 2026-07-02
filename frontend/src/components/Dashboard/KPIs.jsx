@@ -15,17 +15,17 @@ export const KPIs = () => {
     { label: "Factures", value: factures.length, color: "#9c27b0" },
     {
       label: "Total facturé",
-      value: `${totalFactured.toFixed(2)} €`,
+      value: `${totalFactured.toFixed(2)} DT`,
       color: "#1976d2",
     },
     {
       label: "Total encaissé",
-      value: `${totalPaid.toFixed(2)} €`,
+      value: `${totalPaid.toFixed(2)} DT`,
       color: "#2e7d32",
     },
     {
       label: "Reste à encaisser",
-      value: `${totalRemaining.toFixed(2)} €`,
+      value: `${totalRemaining.toFixed(2)} DT`,
       color: "#d32f2f",
     },
   ];

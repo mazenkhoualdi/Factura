@@ -147,19 +147,19 @@ export const Dashboard = () => {
   const financialKpis = [
     {
       label: "Total facturé",
-      value: `${totalFactured.toFixed(2)} €`,
+      value: `${totalFactured.toFixed(2)} DT`,
       icon: <EuroIcon />,
       color: "#1976d2",
     },
     {
       label: "Total encaissé",
-      value: `${totalPaid.toFixed(2)} €`,
+      value: `${totalPaid.toFixed(2)} DT`,
       icon: <PaymentsIcon />,
       color: "#2e7d32",
     },
     {
       label: "Reste à encaisser",
-      value: `${totalRemaining.toFixed(2)} €`,
+      value: `${totalRemaining.toFixed(2)} DT`,
       icon: <MoneyOffIcon />,
       color: "#d32f2f",
     },
@@ -399,8 +399,8 @@ export const Dashboard = () => {
                   borderRadius: 2,
                 }}
               >
-                <strong>{totalPaid.toFixed(2)} €</strong> encaissés sur{" "}
-                <strong>{totalFactured.toFixed(2)} €</strong> facturés
+                <strong>{totalPaid.toFixed(2)} DT</strong> encaissés sur{" "}
+                <strong>{totalFactured.toFixed(2)} DT</strong> facturés
               </Typography>
 
               <Typography
@@ -444,7 +444,7 @@ export const Dashboard = () => {
                     Encaissé
                   </Typography>
                   <Typography fontWeight={700} color="success.main">
-                    {totalPaid.toFixed(2)} €
+                    {totalPaid.toFixed(2)} DT
                   </Typography>
                 </Box>
 
@@ -457,7 +457,7 @@ export const Dashboard = () => {
                     Facturé
                   </Typography>
                   <Typography fontWeight={700} color="primary">
-                    {totalFactured.toFixed(2)} €
+                    {totalFactured.toFixed(2)} DT
                   </Typography>
                 </Box>
               </Box>
@@ -646,7 +646,7 @@ export const Dashboard = () => {
                   <YAxis />
 
                   <RechartsTooltip
-                    formatter={(value) => `${value.toFixed(2)} €`}
+                    formatter={(value) => `${value.toFixed(2)} DT`}
                     contentStyle={{
                       borderRadius: 12,
                       border: "none",

@@ -400,7 +400,7 @@ export const BdcList = () => {
                     </TableCell>
                     <TableCell>{d.description}</TableCell>
                     <TableCell>
-                      {d.amount ? `${d.amount.toLocaleString()} €` : ""}
+                      {d.amount ? `${d.amount.toLocaleString()} DT` : ""}
                     </TableCell>
                     <TableCell>
                       <Chip
@@ -521,7 +521,7 @@ export const BdcList = () => {
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
-                label="Montant (€)"
+                label="Montant (DT)"
                 type="number"
                 fullWidth
                 value={newBdc.amount}
@@ -663,7 +663,7 @@ export const BdcList = () => {
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
-                label="Montant (€)"
+                label="Montant (DT)"
                 type="number"
                 fullWidth
                 value={editFormData.amount}
@@ -842,7 +842,7 @@ export const BdcList = () => {
                   </Typography>
                   <Typography>
                     {selectedBdc.amount
-                      ? `${selectedBdc.amount.toLocaleString()} €`
+                      ? `${selectedBdc.amount.toLocaleString()} DT`
                       : "-"}
                   </Typography>
                 </Grid>

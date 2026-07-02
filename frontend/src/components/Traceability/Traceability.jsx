@@ -206,7 +206,7 @@ export const Traceability = () => {
                         `📄 ${step.label}\n\n` +
                           `Numéro: ${doc.number || doc.reference || "N/A"}\n` +
                           `Statut: ${getStatusLabel(doc.status)}\n` +
-                          `Montant: ${doc.amount ? `${doc.amount.toLocaleString()} €` : "N/A"}\n` +
+                          `Montant: ${doc.amount ? `${doc.amount.toLocaleString()} DT` : "N/A"}\n` +
                           `Date: ${doc.date ? new Date(doc.date).toLocaleDateString("fr-FR") : "N/A"}\n` +
                           `Description: ${doc.description || "Aucune"}`,
                       );

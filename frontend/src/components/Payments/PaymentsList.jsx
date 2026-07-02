@@ -395,7 +395,7 @@ export const PaymentsList = () => {
                         : ""}
                     </TableCell>
                     <TableCell>
-                      {d.amount ? `${d.amount.toLocaleString()} €` : ""}
+                      {d.amount ? `${d.amount.toLocaleString()} DT` : ""}
                     </TableCell>
                     <TableCell>
                       <Chip
@@ -507,7 +507,7 @@ export const PaymentsList = () => {
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
-                label="Montant (€)"
+                label="Montant (DT)"
                 type="number"
                 fullWidth
                 value={newPayment.amount}
@@ -647,7 +647,7 @@ export const PaymentsList = () => {
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
-                label="Montant (€)"
+                label="Montant (DT)"
                 type="number"
                 fullWidth
                 value={editFormData.amount}
@@ -828,7 +828,7 @@ export const PaymentsList = () => {
                   </Typography>
                   <Typography>
                     {selectedPayment.amount
-                      ? `${selectedPayment.amount.toLocaleString()} €`
+                      ? `${selectedPayment.amount.toLocaleString()} DT`
                       : "-"}
                   </Typography>
                 </Grid>

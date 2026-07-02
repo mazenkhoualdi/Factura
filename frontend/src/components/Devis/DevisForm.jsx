@@ -166,7 +166,7 @@ export const DevisForm = ({ open, devis, onClose, onSuccess }) => {
           </Grid>
           <Grid item xs={12} sm={6}>
             <TextField
-              label="Montant (€)"
+              label="Montant (DT)"
               name="amount"
               type="number"
               fullWidth

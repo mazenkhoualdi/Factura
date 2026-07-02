@@ -402,7 +402,7 @@ export const BlList = () => {
                     </TableCell>
                     <TableCell>{d.description}</TableCell>
                     <TableCell>
-                      {d.amount ? `${d.amount.toLocaleString()} €` : ""}
+                      {d.amount ? `${d.amount.toLocaleString()} DT` : ""}
                     </TableCell>
                     <TableCell>
                       <Chip
@@ -521,7 +521,7 @@ export const BlList = () => {
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
-                label="Montant (€)"
+                label="Montant (DT)"
                 type="number"
                 fullWidth
                 value={newBl.amount}
@@ -660,7 +660,7 @@ export const BlList = () => {
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
-                label="Montant (€)"
+                label="Montant (DT)"
                 type="number"
                 fullWidth
                 value={editFormData.amount}
@@ -840,7 +840,7 @@ export const BlList = () => {
                   </Typography>
                   <Typography>
                     {selectedBl.amount
-                      ? `${selectedBl.amount.toLocaleString()} €`
+                      ? `${selectedBl.amount.toLocaleString()} DT`
                       : "-"}
                   </Typography>
                 </Grid>

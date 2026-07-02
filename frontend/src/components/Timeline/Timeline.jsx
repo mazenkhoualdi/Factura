@@ -125,7 +125,7 @@ export const Timeline = () => {
       `📄 ${stepLabel}\n\n` +
         `Numéro: ${doc.number || doc.reference || "N/A"}\n` +
         `Statut: ${getStatusLabel(doc.status)}\n` +
-        `Montant: ${doc.amount ? `${doc.amount.toLocaleString()} €` : "N/A"}\n` +
+        `Montant: ${doc.amount ? `${doc.amount.toLocaleString()} DT` : "N/A"}\n` +
         `Date: ${doc.date ? new Date(doc.date).toLocaleDateString("fr-FR") : "N/A"}\n` +
         `Description: ${doc.description || "Aucune"}`,
     );
@@ -325,7 +325,7 @@ export const Timeline = () => {
                                       color="text.secondary"
                                     >
                                       {step.doc.amount
-                                        ? `${step.doc.amount.toLocaleString()} €`
+                                        ? `${step.doc.amount.toLocaleString()} DT`
                                         : ""}
                                     </Typography>
                                   )}
@@ -362,7 +362,7 @@ export const Timeline = () => {
                                     >
                                       • {p.reference} –{" "}
                                       {p.amount
-                                        ? `${p.amount.toLocaleString()} €`
+                                        ? `${p.amount.toLocaleString()} DT`
                                         : ""}{" "}
                                       ({p.mode})
                                     </Typography>

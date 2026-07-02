@@ -493,7 +493,7 @@ export const DevisList = () => {
                         : ""}
                     </TableCell>
                     <TableCell>
-                      {d.amount ? `${d.amount.toLocaleString()} €` : ""}
+                      {d.amount ? `${d.amount.toLocaleString()} DT` : ""}
                     </TableCell>
                     <TableCell>
                       <Chip
@@ -665,7 +665,7 @@ export const DevisList = () => {
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
-                label="Montant (€)"
+                label="Montant (DT)"
                 type="number"
                 fullWidth
                 value={newDevis.amount}
@@ -861,7 +861,7 @@ export const DevisList = () => {
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
-                label="Montant (€)"
+                label="Montant (DT)"
                 type="number"
                 fullWidth
                 value={editFormData.amount}
@@ -1066,7 +1066,7 @@ export const DevisList = () => {
                   </Typography>
                   <Typography>
                     {selectedDevis.amount
-                      ? `${selectedDevis.amount.toLocaleString()} €`
+                      ? `${selectedDevis.amount.toLocaleString()} DT`
                       : "-"}
                   </Typography>
                 </Grid>

@@ -408,7 +408,7 @@ export const InvoicesList = () => {
                     </TableCell>
                     <TableCell>{d.description}</TableCell>
                     <TableCell>
-                      {d.amount ? `${d.amount.toLocaleString()} €` : ""}
+                      {d.amount ? `${d.amount.toLocaleString()} DT` : ""}
                     </TableCell>
                     <TableCell>
                       <Chip
@@ -531,7 +531,7 @@ export const InvoicesList = () => {
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
-                label="Montant (€)"
+                label="Montant (DT)"
                 type="number"
                 fullWidth
                 value={newInvoice.amount}
@@ -674,7 +674,7 @@ export const InvoicesList = () => {
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
-                label="Montant (€)"
+                label="Montant (DT)"
                 type="number"
                 fullWidth
                 value={editFormData.amount}
@@ -857,7 +857,7 @@ export const InvoicesList = () => {
                   </Typography>
                   <Typography>
                     {selectedInvoice.amount
-                      ? `${selectedInvoice.amount.toLocaleString()} €`
+                      ? `${selectedInvoice.amount.toLocaleString()} DT`
                       : "-"}
                   </Typography>
                 </Grid>

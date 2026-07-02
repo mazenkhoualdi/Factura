@@ -412,7 +412,7 @@ export const AttachmentsList = () => {
                     </TableCell>
                     <TableCell>{d.description}</TableCell>
                     <TableCell>
-                      {d.amount ? `${d.amount.toLocaleString()} €` : ""}
+                      {d.amount ? `${d.amount.toLocaleString()} DT` : ""}
                     </TableCell>
                     <TableCell>
                       <Chip
@@ -533,7 +533,7 @@ export const AttachmentsList = () => {
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
-                label="Montant (€)"
+                label="Montant (DT)"
                 type="number"
                 fullWidth
                 value={newAttachment.amount}
@@ -698,7 +698,7 @@ export const AttachmentsList = () => {
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
-                label="Montant (€)"
+                label="Montant (DT)"
                 type="number"
                 fullWidth
                 value={editFormData.amount}
@@ -896,7 +896,7 @@ export const AttachmentsList = () => {
                   </Typography>
                   <Typography>
                     {selectedAttachment.amount
-                      ? `${selectedAttachment.amount.toLocaleString()} €`
+                      ? `${selectedAttachment.amount.toLocaleString()} DT`
                       : "-"}
                   </Typography>
                 </Grid>
