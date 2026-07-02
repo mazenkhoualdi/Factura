@@ -90,7 +90,8 @@ const KpiCard = ({ label, value, icon, color }) => (
         </Box>
         <Box
           sx={{
-            p: 1.5,
+            p: 0.5,
+            m:1,
             borderRadius: 3,
             bgcolor: `${color}15`,
             color: color,
