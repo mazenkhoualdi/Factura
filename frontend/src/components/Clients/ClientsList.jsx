@@ -19,6 +19,18 @@ import {
   Chip,
   Tooltip,
   Typography,
+  Paper,
+  Avatar,
+  Fade,
+  Zoom,
+  Snackbar,
+  Alert,
+  Skeleton,
+  InputAdornment,
+  useTheme,
+  alpha,
+  Divider,
+  Stack,
 } from "@mui/material";
 import { useAppContext } from "../../context/AppContext";
 import AddIcon from "@mui/icons-material/Add";
@@ -30,11 +42,19 @@ import AttachFileIcon from "@mui/icons-material/AttachFile";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import CloseIcon from "@mui/icons-material/Close";
 import DownloadIcon from "@mui/icons-material/Download";
+import PersonIcon from "@mui/icons-material/Person";
+import EmailIcon from "@mui/icons-material/Email";
+import PhoneIcon from "@mui/icons-material/Phone";
+import BusinessIcon from "@mui/icons-material/Business";
+import ReceiptIcon from "@mui/icons-material/Receipt";
+import NoteIcon from "@mui/icons-material/Note";
 import api, { viewClientPdf, downloadClientPdf } from "../../api/api";
 
 export const ClientsList = () => {
+  const theme = useTheme();
   const { clients, loadClients } = useAppContext();
   const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(false);
 
   // États pour l'ajout
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -74,6 +94,13 @@ export const ClientsList = () => {
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
 
+  // États pour les notifications
+  const [notification, setNotification] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
+
   useEffect(() => {
     loadClients();
   }, []);
@@ -88,11 +115,22 @@ export const ClientsList = () => {
   );
 
   // ============================================================
+  // NOTIFICATIONS
+  // ============================================================
+  const showNotification = (message, severity = "success") => {
+    setNotification({ open: true, message, severity });
+  };
+
+  const handleCloseNotification = () => {
+    setNotification({ ...notification, open: false });
+  };
+
+  // ============================================================
   // AJOUTER UN CLIENT
   // ============================================================
   const handleAddClient = async () => {
     if (!newClient.firstName || !newClient.lastName) {
-      alert("Veuillez remplir le nom et le prénom.");
+      showNotification("Veuillez remplir le nom et le prénom.", "warning");
       return;
     }
 
@@ -120,10 +158,10 @@ export const ClientsList = () => {
         notes: "",
       });
       setSelectedFile(null);
-      alert("✅ Client ajouté avec succès !");
+      showNotification("Client ajouté avec succès !");
     } catch (error) {
       console.error("Erreur ajout client", error);
-      alert("❌ Erreur lors de l'ajout du client");
+      showNotification("Erreur lors de l'ajout du client", "error");
     } finally {
       setAddLoading(false);
     }
@@ -149,7 +187,7 @@ export const ClientsList = () => {
 
   const handleEditClient = async () => {
     if (!editFormData.firstName || !editFormData.lastName) {
-      alert("Veuillez remplir le nom et le prénom.");
+      showNotification("Veuillez remplir le nom et le prénom.", "warning");
       return;
     }
 
@@ -169,10 +207,10 @@ export const ClientsList = () => {
       setEditDialogOpen(false);
       setEditingClient(null);
       setEditFile(null);
-      alert("✅ Client modifié avec succès !");
+      showNotification("Client modifié avec succès !");
     } catch (error) {
       console.error("Erreur modification client", error);
-      alert("❌ Erreur lors de la modification du client");
+      showNotification("Erreur lors de la modification du client", "error");
     } finally {
       setEditLoading(false);
     }
@@ -193,10 +231,10 @@ export const ClientsList = () => {
       await loadClients();
       setDeleteDialogOpen(false);
       setDeletingClient(null);
-      alert("✅ Client supprimé avec succès !");
+      showNotification("Client supprimé avec succès !");
     } catch (error) {
       console.error("Erreur suppression client", error);
-      alert("❌ Erreur lors de la suppression du client");
+      showNotification("Erreur lors de la suppression du client", "error");
     } finally {
       setDeleteLoading(false);
     }
@@ -215,18 +253,18 @@ export const ClientsList = () => {
   // ============================================================
   const handleViewPdf = async (client) => {
     if (!client.pdfUrl) {
-      alert("Aucun PDF attaché à ce client.");
+      showNotification("Aucun PDF attaché à ce client.", "info");
       return;
     }
 
     try {
       const success = await viewClientPdf(client.id);
       if (!success) {
-        alert("❌ Erreur lors de l'ouverture du PDF");
+        showNotification("Erreur lors de l'ouverture du PDF", "error");
       }
     } catch (error) {
       console.error("Erreur", error);
-      alert("❌ Erreur lors de l'ouverture du PDF");
+      showNotification("Erreur lors de l'ouverture du PDF", "error");
     }
   };
 
@@ -235,25 +273,28 @@ export const ClientsList = () => {
   // ============================================================
   const handleDownloadPdf = async (client) => {
     if (!client.pdfUrl) {
-      alert("Aucun PDF attaché à ce client.");
+      showNotification("Aucun PDF attaché à ce client.", "info");
       return;
     }
 
     try {
       const success = await downloadClientPdf(client.id, client.fileName);
       if (success) {
-        alert("✅ Téléchargement du PDF démarré !");
+        showNotification("Téléchargement du PDF démarré !");
       } else {
-        alert("❌ Erreur lors du téléchargement du PDF");
+        showNotification("Erreur lors du téléchargement du PDF", "error");
       }
     } catch (error) {
       console.error("Erreur", error);
-      alert("❌ Erreur lors du téléchargement du PDF");
+      showNotification("Erreur lors du téléchargement du PDF", "error");
     }
   };
 
+  // ============================================================
+  // RENDER
+  // ============================================================
   return (
-    <Box>
+    <Box sx={{ p: { xs: 2, sm: 3 } }}>
       {/* ============================================================
                 EN-TÊTE
                 ============================================================ */}
@@ -261,24 +302,47 @@ export const ClientsList = () => {
         sx={{
           display: "flex",
           justifyContent: "space-between",
-          mb: 3,
+          alignItems: "center",
+          mb: 4,
           flexWrap: "wrap",
           gap: 2,
         }}
       >
-        <Typography variant="h4" fontWeight={700}>
-          Clients
-        </Typography>
-        <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Avatar
+            sx={{
+              bgcolor: alpha(theme.palette.primary.main, 0.1),
+              color: theme.palette.primary.main,
+              width: 48,
+              height: 48,
+            }}
+          >
+            <PersonIcon />
+          </Avatar>
+          <Box>
+            <Typography variant="h4" fontWeight={700}>
+              Clients
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {filteredClients.length} client
+              {filteredClients.length > 1 ? "s" : ""} trouvé
+              {filteredClients.length > 1 ? "s" : ""}
+            </Typography>
+          </Box>
+        </Box>
+
+        <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap", gap: 1 }}>
           <TextField
             size="small"
             placeholder="Rechercher un client..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            sx={{ width: 250 }}
+            sx={{ width: { xs: "100%", sm: 250 } }}
             InputProps={{
               startAdornment: (
-                <SearchIcon sx={{ mr: 1, color: "text.secondary" }} />
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ color: "text.secondary" }} />
+                </InputAdornment>
               ),
             }}
           />
@@ -286,85 +350,229 @@ export const ClientsList = () => {
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => setAddDialogOpen(true)}
+            sx={{
+              borderRadius: 2,
+              textTransform: "none",
+              boxShadow: theme.shadows[2],
+              "&:hover": {
+                boxShadow: theme.shadows[4],
+              },
+            }}
           >
             Nouveau client
           </Button>
-        </Box>
+        </Stack>
       </Box>
 
       {/* ============================================================
                 TABLEAU
                 ============================================================ */}
-      <Card>
+      <Card
+        elevation={0}
+        sx={{
+          borderRadius: 3,
+          border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          overflow: "hidden",
+        }}
+      >
         <TableContainer>
           <Table>
             <TableHead>
-              <TableRow>
-                <TableCell>Nom</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>Téléphone</TableCell>
-                <TableCell>Matricule fiscal</TableCell>
-                <TableCell align="right">Actions</TableCell>
+              <TableRow
+                sx={{ bgcolor: alpha(theme.palette.primary.main, 0.04) }}
+              >
+                <TableCell sx={{ fontWeight: 600 }}>Client</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Téléphone</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Matricule fiscal</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 600 }}>
+                  Actions
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {filteredClients.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} align="center">
-                    <Typography color="text.secondary">
-                      Aucun client trouvé.
-                    </Typography>
+                  <TableCell colSpan={5} align="center" sx={{ py: 8 }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: 2,
+                      }}
+                    >
+                      <PersonIcon
+                        sx={{ fontSize: 48, color: "text.disabled" }}
+                      />
+                      <Typography color="text.secondary" variant="body1">
+                        Aucun client trouvé
+                      </Typography>
+                      <Button
+                        variant="outlined"
+                        startIcon={<AddIcon />}
+                        onClick={() => setAddDialogOpen(true)}
+                        sx={{ textTransform: "none" }}
+                      >
+                        Ajouter un client
+                      </Button>
+                    </Box>
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredClients.map((client) => (
-                  <TableRow key={client.id} hover>
-                    <TableCell>{`${client.firstName} ${client.lastName}`}</TableCell>
-                    <TableCell>{client.email}</TableCell>
-                    <TableCell>{client.phone}</TableCell>
-                    <TableCell>{client.fiscalId}</TableCell>
+                filteredClients.map((client, index) => (
+                  <TableRow
+                    key={client.id}
+                    hover
+                    sx={{
+                      "&:hover": {
+                        bgcolor: alpha(theme.palette.primary.main, 0.02),
+                      },
+                      transition: "background-color 0.2s",
+                    }}
+                  >
+                    <TableCell>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
+                      >
+                        <Avatar
+                          sx={{
+                            width: 36,
+                            height: 36,
+                            bgcolor: alpha(theme.palette.primary.main, 0.1),
+                            color: theme.palette.primary.main,
+                            fontSize: 14,
+                            fontWeight: 600,
+                          }}
+                        >
+                          {client.firstName?.[0]}
+                          {client.lastName?.[0]}
+                        </Avatar>
+                        <Typography fontWeight={500}>
+                          {`${client.firstName} ${client.lastName}`}
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
+                        <EmailIcon
+                          sx={{ fontSize: 16, color: "text.secondary" }}
+                        />
+                        <Typography variant="body2">
+                          {client.email || "-"}
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
+                        <PhoneIcon
+                          sx={{ fontSize: 16, color: "text.secondary" }}
+                        />
+                        <Typography variant="body2">
+                          {client.phone || "-"}
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={client.fiscalId || "Non renseigné"}
+                        size="small"
+                        variant="outlined"
+                        sx={{
+                          borderRadius: 1,
+                          fontSize: "0.75rem",
+                          borderColor: client.fiscalId
+                            ? alpha(theme.palette.success.main, 0.3)
+                            : alpha(theme.palette.grey[500], 0.3),
+                          color: client.fiscalId
+                            ? theme.palette.success.main
+                            : theme.palette.text.secondary,
+                        }}
+                      />
+                    </TableCell>
                     <TableCell align="right">
-                      <Tooltip title="Voir détails">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleViewDetail(client)}
-                        >
-                          <VisibilityIcon />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Aperçu PDF">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleViewPdf(client)}
-                        >
-                          <PictureAsPdfIcon />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Télécharger PDF">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleDownloadPdf(client)}
-                        >
-                          <DownloadIcon />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Modifier">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleOpenEdit(client)}
-                        >
-                          <EditIcon />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Supprimer">
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => handleOpenDelete(client)}
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </Tooltip>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "flex-end",
+                          gap: 0.5,
+                        }}
+                      >
+                        <Tooltip title="Voir détails" arrow>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleViewDetail(client)}
+                            sx={{
+                              color: theme.palette.info.main,
+                              "&:hover": {
+                                bgcolor: alpha(theme.palette.info.main, 0.1),
+                              },
+                            }}
+                          >
+                            <VisibilityIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Aperçu PDF" arrow>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleViewPdf(client)}
+                            sx={{
+                              color: theme.palette.error.main,
+                              "&:hover": {
+                                bgcolor: alpha(theme.palette.error.main, 0.1),
+                              },
+                            }}
+                          >
+                            <PictureAsPdfIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Télécharger PDF" arrow>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleDownloadPdf(client)}
+                            sx={{
+                              color: theme.palette.success.main,
+                              "&:hover": {
+                                bgcolor: alpha(theme.palette.success.main, 0.1),
+                              },
+                            }}
+                          >
+                            <DownloadIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Modifier" arrow>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleOpenEdit(client)}
+                            sx={{
+                              color: theme.palette.warning.main,
+                              "&:hover": {
+                                bgcolor: alpha(theme.palette.warning.main, 0.1),
+                              },
+                            }}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Supprimer" arrow>
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => handleOpenDelete(client)}
+                            sx={{
+                              "&:hover": {
+                                bgcolor: alpha(theme.palette.error.main, 0.1),
+                              },
+                            }}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
                     </TableCell>
                   </TableRow>
                 ))
@@ -382,10 +590,27 @@ export const ClientsList = () => {
         onClose={() => setAddDialogOpen(false)}
         maxWidth="md"
         fullWidth
+        TransitionComponent={Zoom}
       >
-        <DialogTitle>Nouveau client</DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 0.5 }}>
+        <DialogTitle>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <Typography variant="h6" fontWeight={600}>
+              Nouveau client
+            </Typography>
+            <IconButton onClick={() => setAddDialogOpen(false)} size="small">
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <Divider />
+        <DialogContent sx={{ pt: 3 }}>
+          <Grid container spacing={2.5}>
             <Grid item xs={12} sm={6}>
               <TextField
                 label="Prénom"
@@ -395,6 +620,14 @@ export const ClientsList = () => {
                   setNewClient({ ...newClient, firstName: e.target.value })
                 }
                 required
+                size="medium"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <PersonIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -406,6 +639,14 @@ export const ClientsList = () => {
                   setNewClient({ ...newClient, lastName: e.target.value })
                 }
                 required
+                size="medium"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <PersonIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -417,6 +658,14 @@ export const ClientsList = () => {
                 onChange={(e) =>
                   setNewClient({ ...newClient, email: e.target.value })
                 }
+                size="medium"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <EmailIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -427,6 +676,14 @@ export const ClientsList = () => {
                 onChange={(e) =>
                   setNewClient({ ...newClient, phone: e.target.value })
                 }
+                size="medium"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <PhoneIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Grid>
             <Grid item xs={12}>
@@ -439,6 +696,14 @@ export const ClientsList = () => {
                 onChange={(e) =>
                   setNewClient({ ...newClient, address: e.target.value })
                 }
+                size="medium"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <BusinessIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -449,6 +714,14 @@ export const ClientsList = () => {
                 onChange={(e) =>
                   setNewClient({ ...newClient, fiscalId: e.target.value })
                 }
+                size="medium"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <ReceiptIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -461,38 +734,74 @@ export const ClientsList = () => {
                 onChange={(e) =>
                   setNewClient({ ...newClient, notes: e.target.value })
                 }
+                size="medium"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <NoteIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Grid>
             <Grid item xs={12}>
-              <Button
-                variant="outlined"
-                component="label"
-                startIcon={<AttachFileIcon />}
+              <Box
+                sx={{
+                  p: 2,
+                  border: `2px dashed ${alpha(theme.palette.divider, 0.5)}`,
+                  borderRadius: 2,
+                  textAlign: "center",
+                  transition: "all 0.2s",
+                  "&:hover": {
+                    borderColor: theme.palette.primary.main,
+                    bgcolor: alpha(theme.palette.primary.main, 0.02),
+                  },
+                }}
               >
-                Pièce jointe (PDF)
-                <input
-                  type="file"
-                  accept=".pdf"
-                  hidden
-                  onChange={(e) => setSelectedFile(e.target.files[0])}
-                />
-              </Button>
-              {selectedFile && (
-                <Chip label={selectedFile.name} sx={{ ml: 1 }} />
-              )}
+                <Button
+                  variant="outlined"
+                  component="label"
+                  startIcon={<AttachFileIcon />}
+                  sx={{ textTransform: "none" }}
+                >
+                  Pièce jointe (PDF)
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    hidden
+                    onChange={(e) => setSelectedFile(e.target.files[0])}
+                  />
+                </Button>
+                {selectedFile && (
+                  <Chip
+                    label={selectedFile.name}
+                    sx={{ ml: 1 }}
+                    onDelete={() => setSelectedFile(null)}
+                  />
+                )}
+              </Box>
             </Grid>
           </Grid>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setAddDialogOpen(false)} disabled={addLoading}>
+        <DialogActions sx={{ p: 3, pt: 0 }}>
+          <Button
+            onClick={() => setAddDialogOpen(false)}
+            disabled={addLoading}
+            sx={{ textTransform: "none" }}
+          >
             Annuler
           </Button>
           <Button
             variant="contained"
             onClick={handleAddClient}
             disabled={addLoading}
+            sx={{
+              textTransform: "none",
+              px: 4,
+              borderRadius: 2,
+            }}
           >
-            {addLoading ? "Ajout..." : "Ajouter"}
+            {addLoading ? "Ajout en cours..." : "Ajouter"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -505,10 +814,27 @@ export const ClientsList = () => {
         onClose={() => setEditDialogOpen(false)}
         maxWidth="md"
         fullWidth
+        TransitionComponent={Zoom}
       >
-        <DialogTitle>Modifier le client</DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 0.5 }}>
+        <DialogTitle>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <Typography variant="h6" fontWeight={600}>
+              Modifier le client
+            </Typography>
+            <IconButton onClick={() => setEditDialogOpen(false)} size="small">
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <Divider />
+        <DialogContent sx={{ pt: 3 }}>
+          <Grid container spacing={2.5}>
             <Grid item xs={12} sm={6}>
               <TextField
                 label="Prénom"
@@ -521,6 +847,14 @@ export const ClientsList = () => {
                   })
                 }
                 required
+                size="medium"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <PersonIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -532,6 +866,14 @@ export const ClientsList = () => {
                   setEditFormData({ ...editFormData, lastName: e.target.value })
                 }
                 required
+                size="medium"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <PersonIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -543,6 +885,14 @@ export const ClientsList = () => {
                 onChange={(e) =>
                   setEditFormData({ ...editFormData, email: e.target.value })
                 }
+                size="medium"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <EmailIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -553,6 +903,14 @@ export const ClientsList = () => {
                 onChange={(e) =>
                   setEditFormData({ ...editFormData, phone: e.target.value })
                 }
+                size="medium"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <PhoneIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Grid>
             <Grid item xs={12}>
@@ -565,6 +923,14 @@ export const ClientsList = () => {
                 onChange={(e) =>
                   setEditFormData({ ...editFormData, address: e.target.value })
                 }
+                size="medium"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <BusinessIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -575,6 +941,14 @@ export const ClientsList = () => {
                 onChange={(e) =>
                   setEditFormData({ ...editFormData, fiscalId: e.target.value })
                 }
+                size="medium"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <ReceiptIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -587,37 +961,67 @@ export const ClientsList = () => {
                 onChange={(e) =>
                   setEditFormData({ ...editFormData, notes: e.target.value })
                 }
+                size="medium"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <NoteIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Grid>
             <Grid item xs={12}>
-              <Button
-                variant="outlined"
-                component="label"
-                startIcon={<AttachFileIcon />}
+              <Box
+                sx={{
+                  p: 2,
+                  border: `2px dashed ${alpha(theme.palette.divider, 0.5)}`,
+                  borderRadius: 2,
+                  textAlign: "center",
+                  transition: "all 0.2s",
+                  "&:hover": {
+                    borderColor: theme.palette.primary.main,
+                    bgcolor: alpha(theme.palette.primary.main, 0.02),
+                  },
+                }}
               >
-                Nouvelle pièce jointe (PDF)
-                <input
-                  type="file"
-                  accept=".pdf"
-                  hidden
-                  onChange={(e) => setEditFile(e.target.files[0])}
-                />
-              </Button>
-              {editFile && <Chip label={editFile.name} sx={{ ml: 1 }} />}
-              {editingClient?.fileName && !editFile && (
-                <Chip
-                  label={`Actuel: ${editingClient.fileName}`}
-                  sx={{ ml: 1 }}
+                <Button
                   variant="outlined"
-                />
-              )}
+                  component="label"
+                  startIcon={<AttachFileIcon />}
+                  sx={{ textTransform: "none" }}
+                >
+                  Nouvelle pièce jointe (PDF)
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    hidden
+                    onChange={(e) => setEditFile(e.target.files[0])}
+                  />
+                </Button>
+                {editFile && (
+                  <Chip
+                    label={editFile.name}
+                    sx={{ ml: 1 }}
+                    onDelete={() => setEditFile(null)}
+                  />
+                )}
+                {editingClient?.fileName && !editFile && (
+                  <Chip
+                    label={`Actuel: ${editingClient.fileName}`}
+                    sx={{ ml: 1 }}
+                    variant="outlined"
+                  />
+                )}
+              </Box>
             </Grid>
           </Grid>
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ p: 3, pt: 0 }}>
           <Button
             onClick={() => setEditDialogOpen(false)}
             disabled={editLoading}
+            sx={{ textTransform: "none" }}
           >
             Annuler
           </Button>
@@ -625,6 +1029,11 @@ export const ClientsList = () => {
             variant="contained"
             onClick={handleEditClient}
             disabled={editLoading}
+            sx={{
+              textTransform: "none",
+              px: 4,
+              borderRadius: 2,
+            }}
           >
             {editLoading ? "Enregistrement..." : "Enregistrer"}
           </Button>
@@ -637,28 +1046,45 @@ export const ClientsList = () => {
       <Dialog
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
+        TransitionComponent={Zoom}
       >
-        <DialogTitle>Confirmer la suppression</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Êtes-vous sûr de vouloir supprimer le client{" "}
-            <strong>
-              {deletingClient?.firstName} {deletingClient?.lastName}
-            </strong>{" "}
-            ?
+        <DialogTitle>
+          <Typography variant="h6" fontWeight={600}>
+            Confirmer la suppression
           </Typography>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ mt: 1, display: "block" }}
-          >
-            Cette action est irréversible.
-          </Typography>
+        </DialogTitle>
+        <Divider />
+        <DialogContent sx={{ pt: 3 }}>
+          <Box sx={{ textAlign: "center", py: 2 }}>
+            <Avatar
+              sx={{
+                width: 64,
+                height: 64,
+                bgcolor: alpha(theme.palette.error.main, 0.1),
+                color: theme.palette.error.main,
+                mx: "auto",
+                mb: 2,
+              }}
+            >
+              <DeleteIcon sx={{ fontSize: 32 }} />
+            </Avatar>
+            <Typography variant="body1" gutterBottom>
+              Êtes-vous sûr de vouloir supprimer le client{" "}
+              <strong>
+                {deletingClient?.firstName} {deletingClient?.lastName}
+              </strong>
+              ?
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Cette action est irréversible.
+            </Typography>
+          </Box>
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ p: 3, justifyContent: "center", gap: 2 }}>
           <Button
             onClick={() => setDeleteDialogOpen(false)}
             disabled={deleteLoading}
+            sx={{ textTransform: "none", minWidth: 100 }}
           >
             Annuler
           </Button>
@@ -667,6 +1093,7 @@ export const ClientsList = () => {
             variant="contained"
             onClick={handleDeleteClient}
             disabled={deleteLoading}
+            sx={{ textTransform: "none", minWidth: 100, borderRadius: 2 }}
           >
             {deleteLoading ? "Suppression..." : "Supprimer"}
           </Button>
@@ -681,73 +1108,211 @@ export const ClientsList = () => {
         onClose={() => setDetailDialogOpen(false)}
         maxWidth="sm"
         fullWidth
+        TransitionComponent={Zoom}
       >
         {selectedClient && (
           <>
             <DialogTitle>
-              {`${selectedClient.firstName} ${selectedClient.lastName}`}
-              <IconButton
-                onClick={() => setDetailDialogOpen(false)}
-                sx={{ position: "absolute", right: 8, top: 8 }}
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
               >
-                <CloseIcon />
-              </IconButton>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                  <Avatar
+                    sx={{
+                      bgcolor: alpha(theme.palette.primary.main, 0.1),
+                      color: theme.palette.primary.main,
+                    }}
+                  >
+                    {selectedClient.firstName?.[0]}
+                    {selectedClient.lastName?.[0]}
+                  </Avatar>
+                  <Typography variant="h6" fontWeight={600}>
+                    {`${selectedClient.firstName} ${selectedClient.lastName}`}
+                  </Typography>
+                </Box>
+                <IconButton
+                  onClick={() => setDetailDialogOpen(false)}
+                  size="small"
+                >
+                  <CloseIcon />
+                </IconButton>
+              </Box>
             </DialogTitle>
-            <DialogContent>
+            <Divider />
+            <DialogContent sx={{ pt: 3 }}>
               <Grid container spacing={2}>
                 <Grid item xs={12}>
-                  <Typography variant="body2" color="text.secondary">
-                    Email
-                  </Typography>
-                  <Typography>{selectedClient.email || "-"}</Typography>
+                  <Box
+                    sx={{
+                      p: 1.5,
+                      bgcolor: alpha(theme.palette.primary.main, 0.04),
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      fontWeight={600}
+                    >
+                      Email
+                    </Typography>
+                    <Typography variant="body1" sx={{ mt: 0.5 }}>
+                      {selectedClient.email || "-"}
+                    </Typography>
+                  </Box>
                 </Grid>
                 <Grid item xs={12}>
-                  <Typography variant="body2" color="text.secondary">
-                    Téléphone
-                  </Typography>
-                  <Typography>{selectedClient.phone || "-"}</Typography>
+                  <Box
+                    sx={{
+                      p: 1.5,
+                      bgcolor: alpha(theme.palette.primary.main, 0.04),
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      fontWeight={600}
+                    >
+                      Téléphone
+                    </Typography>
+                    <Typography variant="body1" sx={{ mt: 0.5 }}>
+                      {selectedClient.phone || "-"}
+                    </Typography>
+                  </Box>
                 </Grid>
                 <Grid item xs={12}>
-                  <Typography variant="body2" color="text.secondary">
-                    Adresse
-                  </Typography>
-                  <Typography>{selectedClient.address || "-"}</Typography>
+                  <Box
+                    sx={{
+                      p: 1.5,
+                      bgcolor: alpha(theme.palette.primary.main, 0.04),
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      fontWeight={600}
+                    >
+                      Adresse
+                    </Typography>
+                    <Typography variant="body1" sx={{ mt: 0.5 }}>
+                      {selectedClient.address || "-"}
+                    </Typography>
+                  </Box>
                 </Grid>
                 <Grid item xs={12}>
-                  <Typography variant="body2" color="text.secondary">
-                    Matricule fiscal
-                  </Typography>
-                  <Typography>{selectedClient.fiscalId || "-"}</Typography>
+                  <Box
+                    sx={{
+                      p: 1.5,
+                      bgcolor: alpha(theme.palette.primary.main, 0.04),
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      fontWeight={600}
+                    >
+                      Matricule fiscal
+                    </Typography>
+                    <Typography variant="body1" sx={{ mt: 0.5 }}>
+                      {selectedClient.fiscalId || "-"}
+                    </Typography>
+                  </Box>
                 </Grid>
                 <Grid item xs={12}>
-                  <Typography variant="body2" color="text.secondary">
-                    Observations
-                  </Typography>
-                  <Typography>{selectedClient.notes || "Aucune"}</Typography>
+                  <Box
+                    sx={{
+                      p: 1.5,
+                      bgcolor: alpha(theme.palette.primary.main, 0.04),
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      fontWeight={600}
+                    >
+                      Observations
+                    </Typography>
+                    <Typography variant="body1" sx={{ mt: 0.5 }}>
+                      {selectedClient.notes || "Aucune observation"}
+                    </Typography>
+                  </Box>
                 </Grid>
                 {selectedClient.pdfUrl && (
                   <Grid item xs={12}>
-                    <Typography variant="body2" color="text.secondary">
-                      Pièce jointe
-                    </Typography>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      startIcon={<PictureAsPdfIcon />}
-                      onClick={() => handleViewPdf(selectedClient)}
+                    <Box
+                      sx={{
+                        p: 1.5,
+                        bgcolor: alpha(theme.palette.primary.main, 0.04),
+                        borderRadius: 2,
+                      }}
                     >
-                      {selectedClient.fileName || "document.pdf"}
-                    </Button>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        fontWeight={600}
+                      >
+                        Pièce jointe
+                      </Typography>
+                      <Box sx={{ mt: 1 }}>
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          startIcon={<PictureAsPdfIcon />}
+                          onClick={() => handleViewPdf(selectedClient)}
+                          sx={{ textTransform: "none" }}
+                        >
+                          {selectedClient.fileName || "document.pdf"}
+                        </Button>
+                      </Box>
+                    </Box>
                   </Grid>
                 )}
               </Grid>
             </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setDetailDialogOpen(false)}>Fermer</Button>
+            <DialogActions sx={{ p: 3, pt: 0 }}>
+              <Button
+                onClick={() => setDetailDialogOpen(false)}
+                variant="contained"
+                sx={{ textTransform: "none", borderRadius: 2 }}
+              >
+                Fermer
+              </Button>
             </DialogActions>
           </>
         )}
       </Dialog>
+
+      {/* ============================================================
+                SNACKBAR DE NOTIFICATION
+                ============================================================ */}
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={4000}
+        onClose={handleCloseNotification}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        TransitionComponent={Fade}
+      >
+        <Alert
+          onClose={handleCloseNotification}
+          severity={notification.severity}
+          variant="filled"
+          sx={{
+            width: "100%",
+            borderRadius: 2,
+            boxShadow: theme.shadows[4],
+          }}
+        >
+          {notification.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
