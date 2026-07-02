@@ -3,6 +3,7 @@ import DashboardRoundedIcon from "@mui/icons-material/DashboardRounded";
 import TrendingUpRoundedIcon from "@mui/icons-material/TrendingUpRounded";
 import PieChartRoundedIcon from "@mui/icons-material/PieChartRounded";
 import BarChartRoundedIcon from "@mui/icons-material/BarChartRounded";
+import AssessmentIcon from "@mui/icons-material/Assessment";
 import {
   Grid,
   Card,
@@ -91,7 +92,7 @@ const KpiCard = ({ label, value, icon, color }) => (
         <Box
           sx={{
             p: 0.5,
-            m:1,
+            m: 1,
             borderRadius: 3,
             bgcolor: `${color}15`,
             color: color,
@@ -236,8 +237,7 @@ export const Dashboard = () => {
             mb: 1,
           }}
         >
-          <DashboardRoundedIcon color="primary" sx={{ fontSize: 36 }} />
-
+          <AssessmentIcon color="primary" sx={{ fontSize: 36 }} />
           <Typography variant="h4" fontWeight={800} color="primary">
             Tableau de bord
           </Typography>
