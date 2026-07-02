@@ -225,7 +225,6 @@ export const MainLayout = ({ children }) => {
               overflow: "hidden",
             }}
           >
-           
             {/* Notifications */}
             <Tooltip title="Notifications" arrow>
               <IconButton
@@ -394,7 +393,7 @@ export const MainLayout = ({ children }) => {
                   },
                 }}
               >
-                A
+                S
               </Avatar>
             </Tooltip>
           </Stack>

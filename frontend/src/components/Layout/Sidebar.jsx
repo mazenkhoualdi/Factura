@@ -179,9 +179,9 @@ export const Sidebar = () => {
         height: "100vh",
         display: "flex",
         flexDirection: "column",
-        width: 279,
-        minWidth: 279,
-        maxWidth: 280,
+        width: 259,
+        minWidth: 259,
+        maxWidth: 259,
         bgcolor: "background.paper",
         color: "text.primary",
         position: "sticky",
@@ -506,7 +506,7 @@ export const Sidebar = () => {
       {/* Pied de page */}
       <Box
         sx={{
-          p: 2.5,
+          p: 1.8,
           pt: 2,
           borderTop: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
           textAlign: "center",
