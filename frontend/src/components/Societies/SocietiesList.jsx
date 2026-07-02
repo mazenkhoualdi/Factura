@@ -345,7 +345,7 @@ export const SocietiesList = () => {
             </Typography>
             <Typography variant="body2" color="text.secondary">
               {filteredSocietes.length} société
-              {filteredSocietes.length > 1 ? "s" : ""} trouvée
+              {filteredSocietes.length > 1 ? "s" : ""} identifiée
               {filteredSocietes.length > 1 ? "s" : ""}
             </Typography>
           </Box>

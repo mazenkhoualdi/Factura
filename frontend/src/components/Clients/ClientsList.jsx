@@ -325,7 +325,7 @@ export const ClientsList = () => {
             </Typography>
             <Typography variant="body2" color="text.secondary">
               {filteredClients.length} client
-              {filteredClients.length > 1 ? "s" : ""} trouvé
+              {filteredClients.length > 1 ? "s" : ""} identifiée
               {filteredClients.length > 1 ? "s" : ""}
             </Typography>
           </Box>
