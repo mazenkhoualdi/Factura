@@ -19,6 +19,16 @@ import {
   Chip,
   Tooltip,
   Typography,
+  Avatar,
+  Fade,
+  Zoom,
+  Snackbar,
+  Alert,
+  InputAdornment,
+  useTheme,
+  alpha,
+  Divider,
+  Stack,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import VisibilityIcon from "@mui/icons-material/Visibility";
@@ -29,9 +39,17 @@ import AttachFileIcon from "@mui/icons-material/AttachFile";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import DownloadIcon from "@mui/icons-material/Download";
 import CloseIcon from "@mui/icons-material/Close";
+import BusinessIcon from "@mui/icons-material/Business";
+import PersonIcon from "@mui/icons-material/Person";
+import EmailIcon from "@mui/icons-material/Email";
+import PhoneIcon from "@mui/icons-material/Phone";
+import ReceiptIcon from "@mui/icons-material/Receipt";
+import NoteIcon from "@mui/icons-material/Note";
+import StorefrontIcon from "@mui/icons-material/Storefront";
 import api from "../../api/api";
 
 export const SocietiesList = () => {
+  const theme = useTheme();
   const [societies, setSocieties] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
@@ -76,6 +94,13 @@ export const SocietiesList = () => {
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedSociete, setSelectedSociete] = useState(null);
 
+  // États pour les notifications
+  const [notification, setNotification] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
+
   const loadSocietes = async () => {
     setLoading(true);
     try {
@@ -83,6 +108,7 @@ export const SocietiesList = () => {
       setSocieties(response.data || []);
     } catch (error) {
       console.error("Erreur chargement sociétés", error);
+      showNotification("Erreur lors du chargement des sociétés", "error");
     } finally {
       setLoading(false);
     }
@@ -100,11 +126,22 @@ export const SocietiesList = () => {
   );
 
   // ============================================================
+  // NOTIFICATIONS
+  // ============================================================
+  const showNotification = (message, severity = "success") => {
+    setNotification({ open: true, message, severity });
+  };
+
+  const handleCloseNotification = () => {
+    setNotification({ ...notification, open: false });
+  };
+
+  // ============================================================
   // AJOUTER UNE SOCIÉTÉ
   // ============================================================
   const handleAddSociete = async () => {
     if (!newSociete.name) {
-      alert("Veuillez remplir le nom de la société.");
+      showNotification("Veuillez remplir le nom de la société.", "warning");
       return;
     }
 
@@ -133,10 +170,10 @@ export const SocietiesList = () => {
         notes: "",
       });
       setSelectedFile(null);
-      alert("✅ Société ajoutée avec succès !");
+      showNotification("Société ajoutée avec succès !");
     } catch (error) {
       console.error("Erreur ajout société", error);
-      alert("❌ Erreur lors de l'ajout de la société");
+      showNotification("Erreur lors de l'ajout de la société", "error");
     } finally {
       setAddLoading(false);
     }
@@ -163,7 +200,7 @@ export const SocietiesList = () => {
 
   const handleEditSociete = async () => {
     if (!editFormData.name) {
-      alert("Veuillez remplir le nom de la société.");
+      showNotification("Veuillez remplir le nom de la société.", "warning");
       return;
     }
 
@@ -183,10 +220,10 @@ export const SocietiesList = () => {
       setEditDialogOpen(false);
       setEditingSociete(null);
       setEditFile(null);
-      alert("✅ Société modifiée avec succès !");
+      showNotification("Société modifiée avec succès !");
     } catch (error) {
       console.error("Erreur modification société", error);
-      alert("❌ Erreur lors de la modification de la société");
+      showNotification("Erreur lors de la modification de la société", "error");
     } finally {
       setEditLoading(false);
     }
@@ -207,10 +244,10 @@ export const SocietiesList = () => {
       await loadSocietes();
       setDeleteDialogOpen(false);
       setDeletingSociete(null);
-      alert("✅ Société supprimée avec succès !");
+      showNotification("Société supprimée avec succès !");
     } catch (error) {
       console.error("Erreur suppression société", error);
-      alert("❌ Erreur lors de la suppression de la société");
+      showNotification("Erreur lors de la suppression de la société", "error");
     } finally {
       setDeleteLoading(false);
     }
@@ -229,7 +266,7 @@ export const SocietiesList = () => {
   // ============================================================
   const handleViewPdf = async (societe) => {
     if (!societe.pdfUrl) {
-      alert("Aucun PDF attaché à cette société.");
+      showNotification("Aucun PDF attaché à cette société.", "info");
       return;
     }
 
@@ -244,7 +281,7 @@ export const SocietiesList = () => {
       setTimeout(() => window.URL.revokeObjectURL(url), 1000);
     } catch (error) {
       console.error("Erreur visualisation PDF", error);
-      alert("❌ Erreur lors de l'ouverture du PDF");
+      showNotification("Erreur lors de l'ouverture du PDF", "error");
     }
   };
 
@@ -253,7 +290,7 @@ export const SocietiesList = () => {
   // ============================================================
   const handleDownloadPdf = async (societe) => {
     if (!societe.pdfUrl) {
-      alert("Aucun PDF attaché à cette société.");
+      showNotification("Aucun PDF attaché à cette société.", "info");
       return;
     }
 
@@ -269,15 +306,15 @@ export const SocietiesList = () => {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-      alert("✅ Téléchargement du PDF démarré !");
+      showNotification("Téléchargement du PDF démarré !");
     } catch (error) {
       console.error("Erreur téléchargement PDF", error);
-      alert("❌ Erreur lors du téléchargement du PDF");
+      showNotification("Erreur lors du téléchargement du PDF", "error");
     }
   };
 
   return (
-    <Box>
+    <Box sx={{ p: { xs: 2, sm: 3 } }}>
       {/* ============================================================
                 EN-TÊTE
                 ============================================================ */}
@@ -285,24 +322,47 @@ export const SocietiesList = () => {
         sx={{
           display: "flex",
           justifyContent: "space-between",
-          mb: 3,
+          alignItems: "center",
+          mb: 4,
           flexWrap: "wrap",
           gap: 2,
         }}
       >
-        <Typography variant="h4" fontWeight={700}>
-          Sociétés
-        </Typography>
-        <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Avatar
+            sx={{
+              bgcolor: alpha(theme.palette.primary.main, 0.1),
+              color: theme.palette.primary.main,
+              width: 48,
+              height: 48,
+            }}
+          >
+            <BusinessIcon />
+          </Avatar>
+          <Box>
+            <Typography variant="h4" fontWeight={700}>
+              Sociétés
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {filteredSocietes.length} société
+              {filteredSocietes.length > 1 ? "s" : ""} trouvée
+              {filteredSocietes.length > 1 ? "s" : ""}
+            </Typography>
+          </Box>
+        </Box>
+
+        <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap", gap: 1 }}>
           <TextField
             size="small"
             placeholder="Rechercher une société..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            sx={{ width: 250 }}
+            sx={{ width: { xs: "100%", sm: 250 } }}
             InputProps={{
               startAdornment: (
-                <SearchIcon sx={{ mr: 1, color: "text.secondary" }} />
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ color: "text.secondary" }} />
+                </InputAdornment>
               ),
             }}
           />
@@ -310,85 +370,221 @@ export const SocietiesList = () => {
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => setAddDialogOpen(true)}
+            sx={{
+              borderRadius: 2,
+              textTransform: "none",
+              boxShadow: theme.shadows[2],
+              "&:hover": {
+                boxShadow: theme.shadows[4],
+              },
+            }}
           >
             Nouvelle société
           </Button>
-        </Box>
+        </Stack>
       </Box>
 
       {/* ============================================================
                 TABLEAU
                 ============================================================ */}
-      <Card>
+      <Card
+        elevation={0}
+        sx={{
+          borderRadius: 3,
+          border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          overflow: "hidden",
+        }}
+      >
         <TableContainer>
           <Table>
             <TableHead>
-              <TableRow>
-                <TableCell>Raison sociale</TableCell>
-                <TableCell>Responsable</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>Téléphone</TableCell>
-                <TableCell align="right">Actions</TableCell>
+              <TableRow
+                sx={{ bgcolor: alpha(theme.palette.primary.main, 0.04) }}
+              >
+                <TableCell sx={{ fontWeight: 600 }}>Raison sociale</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Responsable</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Téléphone</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 600 }}>
+                  Actions
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {filteredSocietes.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} align="center">
-                    <Typography color="text.secondary">
-                      Aucune société trouvée.
-                    </Typography>
+                  <TableCell colSpan={5} align="center" sx={{ py: 8 }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: 2,
+                      }}
+                    >
+                      <BusinessIcon
+                        sx={{ fontSize: 48, color: "text.disabled" }}
+                      />
+                      <Typography color="text.secondary" variant="body1">
+                        Aucune société trouvée
+                      </Typography>
+                      <Button
+                        variant="outlined"
+                        startIcon={<AddIcon />}
+                        onClick={() => setAddDialogOpen(true)}
+                        sx={{ textTransform: "none" }}
+                      >
+                        Ajouter une société
+                      </Button>
+                    </Box>
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredSocietes.map((societe) => (
-                  <TableRow key={societe.id} hover>
-                    <TableCell>{societe.name}</TableCell>
-                    <TableCell>{societe.contactName}</TableCell>
-                    <TableCell>{societe.email}</TableCell>
-                    <TableCell>{societe.phone}</TableCell>
+                  <TableRow
+                    key={societe.id}
+                    hover
+                    sx={{
+                      "&:hover": {
+                        bgcolor: alpha(theme.palette.primary.main, 0.02),
+                      },
+                      transition: "background-color 0.2s",
+                    }}
+                  >
+                    <TableCell>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
+                      >
+                        <Avatar
+                          sx={{
+                            width: 36,
+                            height: 36,
+                            bgcolor: alpha(theme.palette.primary.main, 0.1),
+                            color: theme.palette.primary.main,
+                            fontSize: 14,
+                            fontWeight: 600,
+                          }}
+                        >
+                          {societe.name?.charAt(0).toUpperCase() || "S"}
+                        </Avatar>
+                        <Typography fontWeight={500}>{societe.name}</Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
+                        <PersonIcon
+                          sx={{ fontSize: 16, color: "text.secondary" }}
+                        />
+                        <Typography variant="body2">
+                          {societe.contactName || "-"}
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
+                        <EmailIcon
+                          sx={{ fontSize: 16, color: "text.secondary" }}
+                        />
+                        <Typography variant="body2">
+                          {societe.email || "-"}
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
+                        <PhoneIcon
+                          sx={{ fontSize: 16, color: "text.secondary" }}
+                        />
+                        <Typography variant="body2">
+                          {societe.phone || "-"}
+                        </Typography>
+                      </Box>
+                    </TableCell>
                     <TableCell align="right">
-                      <Tooltip title="Voir détails">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleViewDetail(societe)}
-                        >
-                          <VisibilityIcon />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Aperçu PDF">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleViewPdf(societe)}
-                        >
-                          <PictureAsPdfIcon />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Télécharger PDF">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleDownloadPdf(societe)}
-                        >
-                          <DownloadIcon />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Modifier">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleOpenEdit(societe)}
-                        >
-                          <EditIcon />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Supprimer">
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => handleOpenDelete(societe)}
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </Tooltip>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "flex-end",
+                          gap: 0.5,
+                        }}
+                      >
+                        <Tooltip title="Voir détails" arrow>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleViewDetail(societe)}
+                            sx={{
+                              color: theme.palette.info.main,
+                              "&:hover": {
+                                bgcolor: alpha(theme.palette.info.main, 0.1),
+                              },
+                            }}
+                          >
+                            <VisibilityIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Aperçu PDF" arrow>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleViewPdf(societe)}
+                            sx={{
+                              color: theme.palette.error.main,
+                              "&:hover": {
+                                bgcolor: alpha(theme.palette.error.main, 0.1),
+                              },
+                            }}
+                          >
+                            <PictureAsPdfIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Télécharger PDF" arrow>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleDownloadPdf(societe)}
+                            sx={{
+                              color: theme.palette.success.main,
+                              "&:hover": {
+                                bgcolor: alpha(theme.palette.success.main, 0.1),
+                              },
+                            }}
+                          >
+                            <DownloadIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Modifier" arrow>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleOpenEdit(societe)}
+                            sx={{
+                              color: theme.palette.warning.main,
+                              "&:hover": {
+                                bgcolor: alpha(theme.palette.warning.main, 0.1),
+                              },
+                            }}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Supprimer" arrow>
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => handleOpenDelete(societe)}
+                            sx={{
+                              "&:hover": {
+                                bgcolor: alpha(theme.palette.error.main, 0.1),
+                              },
+                            }}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
                     </TableCell>
                   </TableRow>
                 ))
@@ -406,10 +602,27 @@ export const SocietiesList = () => {
         onClose={() => setAddDialogOpen(false)}
         maxWidth="md"
         fullWidth
+        TransitionComponent={Zoom}
       >
-        <DialogTitle>Nouvelle société</DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 0.5 }}>
+        <DialogTitle>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <Typography variant="h6" fontWeight={600}>
+              Nouvelle société
+            </Typography>
+            <IconButton onClick={() => setAddDialogOpen(false)} size="small">
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <Divider />
+        <DialogContent sx={{ pt: 3 }}>
+          <Grid container spacing={2.5}>
             <Grid item xs={12}>
               <TextField
                 label="Raison sociale"
@@ -419,6 +632,14 @@ export const SocietiesList = () => {
                   setNewSociete({ ...newSociete, name: e.target.value })
                 }
                 required
+                size="medium"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <StorefrontIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -429,16 +650,33 @@ export const SocietiesList = () => {
                 onChange={(e) =>
                   setNewSociete({ ...newSociete, contactName: e.target.value })
                 }
+                size="medium"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <PersonIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
                 label="Email"
                 fullWidth
+                type="email"
                 value={newSociete.email}
                 onChange={(e) =>
                   setNewSociete({ ...newSociete, email: e.target.value })
                 }
+                size="medium"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <EmailIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -449,6 +687,14 @@ export const SocietiesList = () => {
                 onChange={(e) =>
                   setNewSociete({ ...newSociete, phone: e.target.value })
                 }
+                size="medium"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <PhoneIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -459,6 +705,14 @@ export const SocietiesList = () => {
                 onChange={(e) =>
                   setNewSociete({ ...newSociete, fiscalId: e.target.value })
                 }
+                size="medium"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <ReceiptIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -472,6 +726,14 @@ export const SocietiesList = () => {
                     registryNumber: e.target.value,
                   })
                 }
+                size="medium"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <BusinessIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Grid>
             <Grid item xs={12}>
@@ -484,6 +746,14 @@ export const SocietiesList = () => {
                 onChange={(e) =>
                   setNewSociete({ ...newSociete, address: e.target.value })
                 }
+                size="medium"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <BusinessIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Grid>
             <Grid item xs={12}>
@@ -496,38 +766,74 @@ export const SocietiesList = () => {
                 onChange={(e) =>
                   setNewSociete({ ...newSociete, notes: e.target.value })
                 }
+                size="medium"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <NoteIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Grid>
             <Grid item xs={12}>
-              <Button
-                variant="outlined"
-                component="label"
-                startIcon={<AttachFileIcon />}
+              <Box
+                sx={{
+                  p: 2,
+                  border: `2px dashed ${alpha(theme.palette.divider, 0.5)}`,
+                  borderRadius: 2,
+                  textAlign: "center",
+                  transition: "all 0.2s",
+                  "&:hover": {
+                    borderColor: theme.palette.primary.main,
+                    bgcolor: alpha(theme.palette.primary.main, 0.02),
+                  },
+                }}
               >
-                Pièce jointe (PDF)
-                <input
-                  type="file"
-                  accept=".pdf"
-                  hidden
-                  onChange={(e) => setSelectedFile(e.target.files[0])}
-                />
-              </Button>
-              {selectedFile && (
-                <Chip label={selectedFile.name} sx={{ ml: 1 }} />
-              )}
+                <Button
+                  variant="outlined"
+                  component="label"
+                  startIcon={<AttachFileIcon />}
+                  sx={{ textTransform: "none" }}
+                >
+                  Pièce jointe (PDF)
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    hidden
+                    onChange={(e) => setSelectedFile(e.target.files[0])}
+                  />
+                </Button>
+                {selectedFile && (
+                  <Chip
+                    label={selectedFile.name}
+                    sx={{ ml: 1 }}
+                    onDelete={() => setSelectedFile(null)}
+                  />
+                )}
+              </Box>
             </Grid>
           </Grid>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setAddDialogOpen(false)} disabled={addLoading}>
+        <DialogActions sx={{ p: 3, pt: 0 }}>
+          <Button
+            onClick={() => setAddDialogOpen(false)}
+            disabled={addLoading}
+            sx={{ textTransform: "none" }}
+          >
             Annuler
           </Button>
           <Button
             variant="contained"
             onClick={handleAddSociete}
             disabled={addLoading}
+            sx={{
+              textTransform: "none",
+              px: 4,
+              borderRadius: 2,
+            }}
           >
-            {addLoading ? "Ajout..." : "Ajouter"}
+            {addLoading ? "Ajout en cours..." : "Ajouter"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -540,10 +846,27 @@ export const SocietiesList = () => {
         onClose={() => setEditDialogOpen(false)}
         maxWidth="md"
         fullWidth
+        TransitionComponent={Zoom}
       >
-        <DialogTitle>Modifier la société</DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 0.5 }}>
+        <DialogTitle>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <Typography variant="h6" fontWeight={600}>
+              Modifier la société
+            </Typography>
+            <IconButton onClick={() => setEditDialogOpen(false)} size="small">
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <Divider />
+        <DialogContent sx={{ pt: 3 }}>
+          <Grid container spacing={2.5}>
             <Grid item xs={12}>
               <TextField
                 label="Raison sociale"
@@ -553,6 +876,14 @@ export const SocietiesList = () => {
                   setEditFormData({ ...editFormData, name: e.target.value })
                 }
                 required
+                size="medium"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <StorefrontIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -566,16 +897,33 @@ export const SocietiesList = () => {
                     contactName: e.target.value,
                   })
                 }
+                size="medium"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <PersonIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
                 label="Email"
                 fullWidth
+                type="email"
                 value={editFormData.email}
                 onChange={(e) =>
                   setEditFormData({ ...editFormData, email: e.target.value })
                 }
+                size="medium"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <EmailIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -586,6 +934,14 @@ export const SocietiesList = () => {
                 onChange={(e) =>
                   setEditFormData({ ...editFormData, phone: e.target.value })
                 }
+                size="medium"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <PhoneIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -596,6 +952,14 @@ export const SocietiesList = () => {
                 onChange={(e) =>
                   setEditFormData({ ...editFormData, fiscalId: e.target.value })
                 }
+                size="medium"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <ReceiptIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -609,6 +973,14 @@ export const SocietiesList = () => {
                     registryNumber: e.target.value,
                   })
                 }
+                size="medium"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <BusinessIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Grid>
             <Grid item xs={12}>
@@ -621,6 +993,14 @@ export const SocietiesList = () => {
                 onChange={(e) =>
                   setEditFormData({ ...editFormData, address: e.target.value })
                 }
+                size="medium"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <BusinessIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Grid>
             <Grid item xs={12}>
@@ -633,37 +1013,67 @@ export const SocietiesList = () => {
                 onChange={(e) =>
                   setEditFormData({ ...editFormData, notes: e.target.value })
                 }
+                size="medium"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <NoteIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Grid>
             <Grid item xs={12}>
-              <Button
-                variant="outlined"
-                component="label"
-                startIcon={<AttachFileIcon />}
+              <Box
+                sx={{
+                  p: 2,
+                  border: `2px dashed ${alpha(theme.palette.divider, 0.5)}`,
+                  borderRadius: 2,
+                  textAlign: "center",
+                  transition: "all 0.2s",
+                  "&:hover": {
+                    borderColor: theme.palette.primary.main,
+                    bgcolor: alpha(theme.palette.primary.main, 0.02),
+                  },
+                }}
               >
-                Nouvelle pièce jointe (PDF)
-                <input
-                  type="file"
-                  accept=".pdf"
-                  hidden
-                  onChange={(e) => setEditFile(e.target.files[0])}
-                />
-              </Button>
-              {editFile && <Chip label={editFile.name} sx={{ ml: 1 }} />}
-              {editingSociete?.fileName && !editFile && (
-                <Chip
-                  label={`Actuel: ${editingSociete.fileName}`}
-                  sx={{ ml: 1 }}
+                <Button
                   variant="outlined"
-                />
-              )}
+                  component="label"
+                  startIcon={<AttachFileIcon />}
+                  sx={{ textTransform: "none" }}
+                >
+                  Nouvelle pièce jointe (PDF)
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    hidden
+                    onChange={(e) => setEditFile(e.target.files[0])}
+                  />
+                </Button>
+                {editFile && (
+                  <Chip
+                    label={editFile.name}
+                    sx={{ ml: 1 }}
+                    onDelete={() => setEditFile(null)}
+                  />
+                )}
+                {editingSociete?.fileName && !editFile && (
+                  <Chip
+                    label={`Actuel: ${editingSociete.fileName}`}
+                    sx={{ ml: 1 }}
+                    variant="outlined"
+                  />
+                )}
+              </Box>
             </Grid>
           </Grid>
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ p: 3, pt: 0 }}>
           <Button
             onClick={() => setEditDialogOpen(false)}
             disabled={editLoading}
+            sx={{ textTransform: "none" }}
           >
             Annuler
           </Button>
@@ -671,6 +1081,11 @@ export const SocietiesList = () => {
             variant="contained"
             onClick={handleEditSociete}
             disabled={editLoading}
+            sx={{
+              textTransform: "none",
+              px: 4,
+              borderRadius: 2,
+            }}
           >
             {editLoading ? "Enregistrement..." : "Enregistrer"}
           </Button>
@@ -683,25 +1098,42 @@ export const SocietiesList = () => {
       <Dialog
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
+        TransitionComponent={Zoom}
       >
-        <DialogTitle>Confirmer la suppression</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Êtes-vous sûr de vouloir supprimer la société{" "}
-            <strong>{deletingSociete?.name}</strong> ?
+        <DialogTitle>
+          <Typography variant="h6" fontWeight={600}>
+            Confirmer la suppression
           </Typography>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ mt: 1, display: "block" }}
-          >
-            Cette action est irréversible.
-          </Typography>
+        </DialogTitle>
+        <Divider />
+        <DialogContent sx={{ pt: 3 }}>
+          <Box sx={{ textAlign: "center", py: 2 }}>
+            <Avatar
+              sx={{
+                width: 64,
+                height: 64,
+                bgcolor: alpha(theme.palette.error.main, 0.1),
+                color: theme.palette.error.main,
+                mx: "auto",
+                mb: 2,
+              }}
+            >
+              <DeleteIcon sx={{ fontSize: 32 }} />
+            </Avatar>
+            <Typography variant="body1" gutterBottom>
+              Êtes-vous sûr de vouloir supprimer la société{" "}
+              <strong>{deletingSociete?.name}</strong> ?
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Cette action est irréversible.
+            </Typography>
+          </Box>
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ p: 3, justifyContent: "center", gap: 2 }}>
           <Button
             onClick={() => setDeleteDialogOpen(false)}
             disabled={deleteLoading}
+            sx={{ textTransform: "none", minWidth: 100 }}
           >
             Annuler
           </Button>
@@ -710,6 +1142,7 @@ export const SocietiesList = () => {
             variant="contained"
             onClick={handleDeleteSociete}
             disabled={deleteLoading}
+            sx={{ textTransform: "none", minWidth: 100, borderRadius: 2 }}
           >
             {deleteLoading ? "Suppression..." : "Supprimer"}
           </Button>
@@ -724,87 +1157,250 @@ export const SocietiesList = () => {
         onClose={() => setDetailDialogOpen(false)}
         maxWidth="sm"
         fullWidth
+        TransitionComponent={Zoom}
       >
         {selectedSociete && (
           <>
             <DialogTitle>
-              {selectedSociete.name}
-              <IconButton
-                onClick={() => setDetailDialogOpen(false)}
-                sx={{ position: "absolute", right: 8, top: 8 }}
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
               >
-                <CloseIcon />
-              </IconButton>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                  <Avatar
+                    sx={{
+                      bgcolor: alpha(theme.palette.primary.main, 0.1),
+                      color: theme.palette.primary.main,
+                    }}
+                  >
+                    {selectedSociete.name?.charAt(0).toUpperCase() || "S"}
+                  </Avatar>
+                  <Typography variant="h6" fontWeight={600}>
+                    {selectedSociete.name}
+                  </Typography>
+                </Box>
+                <IconButton
+                  onClick={() => setDetailDialogOpen(false)}
+                  size="small"
+                >
+                  <CloseIcon />
+                </IconButton>
+              </Box>
             </DialogTitle>
-            <DialogContent>
+            <Divider />
+            <DialogContent sx={{ pt: 3 }}>
               <Grid container spacing={2}>
                 <Grid item xs={12}>
-                  <Typography variant="body2" color="text.secondary">
-                    Responsable
-                  </Typography>
-                  <Typography>{selectedSociete.contactName || "-"}</Typography>
+                  <Box
+                    sx={{
+                      p: 1.5,
+                      bgcolor: alpha(theme.palette.primary.main, 0.04),
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      fontWeight={600}
+                    >
+                      Responsable
+                    </Typography>
+                    <Typography variant="body1" sx={{ mt: 0.5 }}>
+                      {selectedSociete.contactName || "-"}
+                    </Typography>
+                  </Box>
                 </Grid>
                 <Grid item xs={12}>
-                  <Typography variant="body2" color="text.secondary">
-                    Email
-                  </Typography>
-                  <Typography>{selectedSociete.email || "-"}</Typography>
+                  <Box
+                    sx={{
+                      p: 1.5,
+                      bgcolor: alpha(theme.palette.primary.main, 0.04),
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      fontWeight={600}
+                    >
+                      Email
+                    </Typography>
+                    <Typography variant="body1" sx={{ mt: 0.5 }}>
+                      {selectedSociete.email || "-"}
+                    </Typography>
+                  </Box>
                 </Grid>
                 <Grid item xs={12}>
-                  <Typography variant="body2" color="text.secondary">
-                    Téléphone
-                  </Typography>
-                  <Typography>{selectedSociete.phone || "-"}</Typography>
+                  <Box
+                    sx={{
+                      p: 1.5,
+                      bgcolor: alpha(theme.palette.primary.main, 0.04),
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      fontWeight={600}
+                    >
+                      Téléphone
+                    </Typography>
+                    <Typography variant="body1" sx={{ mt: 0.5 }}>
+                      {selectedSociete.phone || "-"}
+                    </Typography>
+                  </Box>
                 </Grid>
                 <Grid item xs={12}>
-                  <Typography variant="body2" color="text.secondary">
-                    Adresse
-                  </Typography>
-                  <Typography>{selectedSociete.address || "-"}</Typography>
+                  <Box
+                    sx={{
+                      p: 1.5,
+                      bgcolor: alpha(theme.palette.primary.main, 0.04),
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      fontWeight={600}
+                    >
+                      Adresse
+                    </Typography>
+                    <Typography variant="body1" sx={{ mt: 0.5 }}>
+                      {selectedSociete.address || "-"}
+                    </Typography>
+                  </Box>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" color="text.secondary">
-                    Matricule fiscal
-                  </Typography>
-                  <Typography>{selectedSociete.fiscalId || "-"}</Typography>
+                  <Box
+                    sx={{
+                      p: 1.5,
+                      bgcolor: alpha(theme.palette.primary.main, 0.04),
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      fontWeight={600}
+                    >
+                      Matricule fiscal
+                    </Typography>
+                    <Typography variant="body1" sx={{ mt: 0.5 }}>
+                      {selectedSociete.fiscalId || "-"}
+                    </Typography>
+                  </Box>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" color="text.secondary">
-                    Registre de commerce
-                  </Typography>
-                  <Typography>
-                    {selectedSociete.registryNumber || "-"}
-                  </Typography>
+                  <Box
+                    sx={{
+                      p: 1.5,
+                      bgcolor: alpha(theme.palette.primary.main, 0.04),
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      fontWeight={600}
+                    >
+                      Registre de commerce
+                    </Typography>
+                    <Typography variant="body1" sx={{ mt: 0.5 }}>
+                      {selectedSociete.registryNumber || "-"}
+                    </Typography>
+                  </Box>
                 </Grid>
                 <Grid item xs={12}>
-                  <Typography variant="body2" color="text.secondary">
-                    Observations
-                  </Typography>
-                  <Typography>{selectedSociete.notes || "Aucune"}</Typography>
+                  <Box
+                    sx={{
+                      p: 1.5,
+                      bgcolor: alpha(theme.palette.primary.main, 0.04),
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      fontWeight={600}
+                    >
+                      Observations
+                    </Typography>
+                    <Typography variant="body1" sx={{ mt: 0.5 }}>
+                      {selectedSociete.notes || "Aucune observation"}
+                    </Typography>
+                  </Box>
                 </Grid>
                 {selectedSociete.pdfUrl && (
                   <Grid item xs={12}>
-                    <Typography variant="body2" color="text.secondary">
-                      Pièce jointe
-                    </Typography>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      startIcon={<PictureAsPdfIcon />}
-                      onClick={() => handleViewPdf(selectedSociete)}
+                    <Box
+                      sx={{
+                        p: 1.5,
+                        bgcolor: alpha(theme.palette.primary.main, 0.04),
+                        borderRadius: 2,
+                      }}
                     >
-                      {selectedSociete.fileName || "document.pdf"}
-                    </Button>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        fontWeight={600}
+                      >
+                        Pièce jointe
+                      </Typography>
+                      <Box sx={{ mt: 1 }}>
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          startIcon={<PictureAsPdfIcon />}
+                          onClick={() => handleViewPdf(selectedSociete)}
+                          sx={{ textTransform: "none" }}
+                        >
+                          {selectedSociete.fileName || "document.pdf"}
+                        </Button>
+                      </Box>
+                    </Box>
                   </Grid>
                 )}
               </Grid>
             </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setDetailDialogOpen(false)}>Fermer</Button>
+            <DialogActions sx={{ p: 3, pt: 0 }}>
+              <Button
+                onClick={() => setDetailDialogOpen(false)}
+                variant="contained"
+                sx={{ textTransform: "none", borderRadius: 2 }}
+              >
+                Fermer
+              </Button>
             </DialogActions>
           </>
         )}
       </Dialog>
+
+      {/* ============================================================
+                SNACKBAR DE NOTIFICATION
+                ============================================================ */}
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={4000}
+        onClose={handleCloseNotification}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        TransitionComponent={Fade}
+      >
+        <Alert
+          onClose={handleCloseNotification}
+          severity={notification.severity}
+          variant="filled"
+          sx={{
+            width: "100%",
+            borderRadius: 2,
+            boxShadow: theme.shadows[4],
+          }}
+        >
+          {notification.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
