@@ -36,7 +36,10 @@ public class DevisService {
         return devisRepository.findById(id)
                 .map(devis -> {
                     devis.setNumber(devisDetails.getNumber());
-                    devis.setClient(devisDetails.getClient());
+                    // Récupérer le client depuis les détails
+                    if (devisDetails.getClient() != null) {
+                        devis.setClient(devisDetails.getClient());
+                    }
                     devis.setDate(devisDetails.getDate());
                     devis.setExpirationDate(devisDetails.getExpirationDate());
                     devis.setDescription(devisDetails.getDescription());
@@ -72,5 +75,10 @@ public class DevisService {
         devisRepository.save(devis);
 
         return filePath.toString();
+    }
+
+    // Nouvelle méthode pour récupérer les devis par client
+    public List<Devis> getDevisByClientId(UUID clientId) {
+        return devisRepository.findByClientId(clientId);
     }
 }

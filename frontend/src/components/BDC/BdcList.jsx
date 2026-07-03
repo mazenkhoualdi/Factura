@@ -101,9 +101,10 @@ export const BdcList = () => {
     setLoading(true);
     try {
       const response = await api.get("/bdc");
-      setBdc(response.data || []);
+      setBdc(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error("Erreur chargement BDC", error);
+      setBdc([]);
     } finally {
       setLoading(false);
     }
@@ -112,9 +113,11 @@ export const BdcList = () => {
   const loadDevis = async () => {
     try {
       const response = await api.get("/devis");
-      setDevisList(response.data || []);
+      // Vérifier que la réponse est bien un tableau
+      setDevisList(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error("Erreur chargement devis", error);
+      setDevisList([]);
     }
   };
 
@@ -123,12 +126,14 @@ export const BdcList = () => {
     loadDevis();
   }, []);
 
-  const filteredBdc = bdc.filter(
-    (d) =>
-      d.number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      d.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      d.devisNumber?.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  const filteredBdc = Array.isArray(bdc)
+    ? bdc.filter(
+        (d) =>
+          d.number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          d.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          d.devisNumber?.toLowerCase().includes(searchTerm.toLowerCase()),
+      )
+    : [];
 
   // ============================================================
   // AJOUTER UN BDC
@@ -490,9 +495,9 @@ export const BdcList = () => {
                 <Select
                   value={newBdc.devisId}
                   onChange={(e) => {
-                    const devis = devisList.find(
-                      (d) => d.id === e.target.value,
-                    );
+                    const devis = Array.isArray(devisList)
+                      ? devisList.find((d) => d.id === e.target.value)
+                      : null;
                     setNewBdc({
                       ...newBdc,
                       devisId: e.target.value,
@@ -501,11 +506,12 @@ export const BdcList = () => {
                   }}
                   label="Devis source"
                 >
-                  {devisList.map((d) => (
-                    <MenuItem key={d.id} value={d.id}>
-                      {d.number}
-                    </MenuItem>
-                  ))}
+                  {Array.isArray(devisList) &&
+                    devisList.map((d) => (
+                      <MenuItem key={d.id} value={d.id}>
+                        {d.number}
+                      </MenuItem>
+                    ))}
                 </Select>
               </FormControl>
             </Grid>
@@ -630,9 +636,9 @@ export const BdcList = () => {
                 <Select
                   value={editFormData.devisId}
                   onChange={(e) => {
-                    const devis = devisList.find(
-                      (d) => d.id === e.target.value,
-                    );
+                    const devis = Array.isArray(devisList)
+                      ? devisList.find((d) => d.id === e.target.value)
+                      : null;
                     setEditFormData({
                       ...editFormData,
                       devisId: e.target.value,
@@ -641,11 +647,12 @@ export const BdcList = () => {
                   }}
                   label="Devis source"
                 >
-                  {devisList.map((d) => (
-                    <MenuItem key={d.id} value={d.id}>
-                      {d.number}
-                    </MenuItem>
-                  ))}
+                  {Array.isArray(devisList) &&
+                    devisList.map((d) => (
+                      <MenuItem key={d.id} value={d.id}>
+                        {d.number}
+                      </MenuItem>
+                    ))}
                 </Select>
               </FormControl>
             </Grid>

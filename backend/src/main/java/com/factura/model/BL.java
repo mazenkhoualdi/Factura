@@ -1,5 +1,7 @@
 package com.factura.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.Date;
@@ -18,9 +20,13 @@ public class BL {
     @Column(unique = true, nullable = false)
     private String number;
 
+    @JsonBackReference  // ← AJOUTER
     @OneToOne
     @JoinColumn(name = "bdc_id", unique = true)
     private BDC bdc;
+
+    @Column(name = "bdc_number")
+    private String bdcNumber;
 
     @Temporal(TemporalType.DATE)
     private Date date;
@@ -41,6 +47,7 @@ public class BL {
     @Temporal(TemporalType.TIMESTAMP)
     private Date updatedAt;
 
+    @JsonManagedReference  // ← AJOUTER
     @OneToOne(mappedBy = "bl", cascade = CascadeType.ALL)
     private Attachement attachement;
 

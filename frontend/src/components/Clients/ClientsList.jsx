@@ -19,18 +19,17 @@ import {
   Chip,
   Tooltip,
   Typography,
-  Paper,
   Avatar,
   Fade,
   Zoom,
   Snackbar,
   Alert,
-  Skeleton,
   InputAdornment,
   useTheme,
   alpha,
   Divider,
   Stack,
+  CircularProgress,
 } from "@mui/material";
 import { useAppContext } from "../../context/AppContext";
 import AddIcon from "@mui/icons-material/Add";
@@ -52,9 +51,9 @@ import api, { viewClientPdf, downloadClientPdf } from "../../api/api";
 
 export const ClientsList = () => {
   const theme = useTheme();
-  const { clients, loadClients } = useAppContext();
+  const { clients, loadClients, loading: contextLoading } = useAppContext();
   const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [localLoading, setLocalLoading] = useState(false);
 
   // États pour l'ajout
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -101,18 +100,35 @@ export const ClientsList = () => {
     severity: "success",
   });
 
+  // Charger les clients au montage
   useEffect(() => {
-    loadClients();
+    const loadData = async () => {
+      setLocalLoading(true);
+      try {
+        await loadClients();
+      } catch (error) {
+        console.error("Erreur chargement clients", error);
+      } finally {
+        setLocalLoading(false);
+      }
+    };
+    loadData();
   }, []);
 
-  const filteredClients = clients.filter(
-    (c) =>
-      `${c.firstName} ${c.lastName}`
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      c.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.phone?.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  // ✅ Vérification sécurisée - clients doit être un tableau
+  const safeClients = Array.isArray(clients) ? clients : [];
+
+  // Filtrer les clients
+  const filteredClients = safeClients.filter((c) => {
+    if (!c) return false;
+    const fullName = `${c.firstName || ""} ${c.lastName || ""}`.toLowerCase();
+    const search = searchTerm.toLowerCase().trim();
+    return (
+      fullName.includes(search) ||
+      (c.email || "").toLowerCase().includes(search) ||
+      (c.phone || "").toLowerCase().includes(search)
+    );
+  });
 
   // ============================================================
   // NOTIFICATIONS
@@ -290,9 +306,27 @@ export const ClientsList = () => {
     }
   };
 
-  // ============================================================
-  // RENDER
-  // ============================================================
+  // Afficher un loader pendant le chargement
+  if (localLoading || contextLoading) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "50vh",
+          flexDirection: "column",
+          gap: 2,
+        }}
+      >
+        <CircularProgress />
+        <Typography color="text.secondary">
+          Chargement des clients...
+        </Typography>
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ p: { xs: 2, sm: 3 } }}>
       {/* ============================================================
@@ -325,7 +359,7 @@ export const ClientsList = () => {
             </Typography>
             <Typography variant="body2" color="text.secondary">
               {filteredClients.length} client
-              {filteredClients.length > 1 ? "s" : ""} identifiée
+              {filteredClients.length > 1 ? "s" : ""} trouvé
               {filteredClients.length > 1 ? "s" : ""}
             </Typography>
           </Box>
@@ -406,21 +440,25 @@ export const ClientsList = () => {
                         sx={{ fontSize: 48, color: "text.disabled" }}
                       />
                       <Typography color="text.secondary" variant="body1">
-                        Aucun client trouvé
+                        {searchTerm
+                          ? "Aucun client ne correspond à votre recherche"
+                          : "Aucun client trouvé"}
                       </Typography>
-                      <Button
-                        variant="outlined"
-                        startIcon={<AddIcon />}
-                        onClick={() => setAddDialogOpen(true)}
-                        sx={{ textTransform: "none" }}
-                      >
-                        Ajouter un client
-                      </Button>
+                      {!searchTerm && (
+                        <Button
+                          variant="outlined"
+                          startIcon={<AddIcon />}
+                          onClick={() => setAddDialogOpen(true)}
+                          sx={{ textTransform: "none" }}
+                        >
+                          Ajouter un client
+                        </Button>
+                      )}
                     </Box>
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredClients.map((client, index) => (
+                filteredClients.map((client) => (
                   <TableRow
                     key={client.id}
                     hover
@@ -445,11 +483,12 @@ export const ClientsList = () => {
                             fontWeight: 600,
                           }}
                         >
-                          {client.firstName?.[0]}
-                          {client.lastName?.[0]}
+                          {client.firstName?.[0] || "?"}
+                          {client.lastName?.[0] || ""}
                         </Avatar>
                         <Typography fontWeight={500}>
-                          {`${client.firstName} ${client.lastName}`}
+                          {`${client.firstName || ""} ${client.lastName || ""}`.trim() ||
+                            "Nom inconnu"}
                         </Typography>
                       </Box>
                     </TableCell>
@@ -1072,7 +1111,7 @@ export const ClientsList = () => {
               Êtes-vous sûr de vouloir supprimer le client{" "}
               <strong>
                 {deletingClient?.firstName} {deletingClient?.lastName}
-              </strong>
+              </strong>{" "}
               ?
             </Typography>
             <Typography variant="caption" color="text.secondary">

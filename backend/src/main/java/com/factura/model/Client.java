@@ -1,5 +1,6 @@
 package com.factura.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.Date;
@@ -38,6 +39,7 @@ public class Client {
     @Temporal(TemporalType.TIMESTAMP)
     private Date updatedAt;
 
+    @JsonManagedReference  // ← AJOUTER
     @OneToMany(mappedBy = "client", cascade = CascadeType.ALL)
     private List<Devis> devis;
 

@@ -5,7 +5,7 @@ const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
   const [clients, setClients] = useState([]);
-  const [societies, setSocieties] = useState([]); // <-- AJOUT SOCIÉTÉS
+  const [societies, setSocieties] = useState([]);
   const [devis, setDevis] = useState([]);
   const [bdc, setBdc] = useState([]);
   const [bl, setBl] = useState([]);
@@ -16,14 +16,12 @@ export const AppProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
 
   const loadClients = async () => {
-    setLoading(true);
     try {
       const response = await api.get("/clients");
       setClients(response.data || []);
     } catch (error) {
       console.error("Erreur chargement clients", error);
-    } finally {
-      setLoading(false);
+      setClients([]); // ← En cas d'erreur, mettre un tableau vide
     }
   };
 

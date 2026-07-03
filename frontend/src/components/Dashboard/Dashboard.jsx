@@ -8,12 +8,14 @@ import {
   Grid,
   Card,
   CardContent,
-  CardHeader,
   Typography,
   Box,
   LinearProgress,
   linearProgressClasses,
   styled,
+  CircularProgress,
+  useTheme,
+  alpha,
 } from "@mui/material";
 import { useAppContext } from "../../context/AppContext";
 import PeopleIcon from "@mui/icons-material/People";
@@ -37,7 +39,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-// Barre de progression personnalisée avec couleurs dynamiques
+// Barre de progression personnalisée
 const CustomLinearProgress = styled(LinearProgress)(({ value }) => ({
   height: 12,
   borderRadius: 6,
@@ -52,100 +54,115 @@ const CustomLinearProgress = styled(LinearProgress)(({ value }) => ({
   },
 }));
 
-// Petite carte KPI réutilisable - AMÉLIORÉE
-const KpiCard = ({ label, value, icon, color }) => (
-  <Card
-    sx={{
-      height: "100%",
-      borderRadius: 3,
-      transition: "all 0.3s ease",
-      border: `1px solid ${color}25`,
-      background: (theme) =>
-        `linear-gradient(135deg, ${color}08, ${theme.palette.background.paper})`,
-      "&:hover": {
-        transform: "translateY(-4px)",
-        boxShadow: (theme) => `0 8px 24px ${color}30`,
-        borderColor: color,
-      },
-    }}
-  >
-    <CardContent>
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-        }}
-      >
-        <Box>
-          <Typography variant="caption" color="text.secondary" fontWeight={600}>
-            {label}
-          </Typography>
-          <Typography
-            variant="h5"
-            fontWeight={800}
-            sx={{ mt: 0.5, color: color }}
-          >
-            {value}
-          </Typography>
-        </Box>
+// KpiCard
+const KpiCard = ({ label, value, icon, color }) => {
+  const theme = useTheme();
+  return (
+    <Card
+      sx={{
+        height: "100%",
+        borderRadius: 3,
+        transition: "all 0.3s ease",
+        border: `1px solid ${color}25`,
+        background: `linear-gradient(135deg, ${color}08, ${theme.palette.background.paper})`,
+        "&:hover": {
+          transform: "translateY(-4px)",
+          boxShadow: `0 8px 24px ${color}30`,
+          borderColor: color,
+        },
+      }}
+    >
+      <CardContent>
         <Box
           sx={{
-            p: 0.5,
-            m: 1,
-            borderRadius: 3,
-            bgcolor: `${color}15`,
-            color: color,
-            border: `1px solid ${color}30`,
-            boxShadow: `0 2px 8px ${color}20`,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
           }}
         >
-          {icon}
+          <Box>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              fontWeight={600}
+            >
+              {label}
+            </Typography>
+            <Typography
+              variant="h5"
+              fontWeight={800}
+              sx={{ mt: 0.5, color: color }}
+            >
+              {value}
+            </Typography>
+          </Box>
+          <Box
+            sx={{
+              p: 0.5,
+              m: 1,
+              borderRadius: 3,
+              bgcolor: `${color}15`,
+              color: color,
+              border: `1px solid ${color}30`,
+              boxShadow: `0 2px 8px ${color}20`,
+            }}
+          >
+            {icon}
+          </Box>
         </Box>
-      </Box>
-    </CardContent>
-  </Card>
-);
+      </CardContent>
+    </Card>
+  );
+};
 
 export const Dashboard = () => {
-  const { clients, devis, factures, paiements } = useAppContext();
+  const theme = useTheme();
+  const { clients, devis, factures, paiements, loading } = useAppContext();
 
-  const totalFactured = factures.reduce((sum, f) => sum + (f.amount || 0), 0);
-  const totalPaid = paiements.reduce((sum, p) => sum + (p.amount || 0), 0);
+  // ✅ Vérification des tableaux
+  const safeClients = Array.isArray(clients) ? clients : [];
+  const safeDevis = Array.isArray(devis) ? devis : [];
+  const safeFactures = Array.isArray(factures) ? factures : [];
+  const safePaiements = Array.isArray(paiements) ? paiements : [];
+
+  const totalFactured = safeFactures.reduce(
+    (sum, f) => sum + (f.amount || 0),
+    0,
+  );
+  const totalPaid = safePaiements.reduce((sum, p) => sum + (p.amount || 0), 0);
   const totalRemaining = totalFactured - totalPaid;
 
   const encaissementPercentage =
     totalFactured > 0 ? Math.round((totalPaid / totalFactured) * 100) : 0;
 
-  // Groupe 1 : indicateurs d'activité (compteurs)
+  // KPIs
   const activityKpis = [
     {
       label: "Clients",
-      value: clients.length,
+      value: safeClients.length,
       icon: <PeopleIcon />,
       color: "#1976d2",
     },
     {
       label: "Devis",
-      value: devis.length,
+      value: safeDevis.length,
       icon: <DescriptionIcon />,
       color: "#ed6c02",
     },
     {
       label: "Factures",
-      value: factures.length,
+      value: safeFactures.length,
       icon: <ReceiptLongIcon />,
       color: "#9c27b0",
     },
     {
       label: "Dossiers en cours",
-      value: devis.filter((d) => d.status === "pending").length,
+      value: safeDevis.filter((d) => d.status === "pending").length,
       icon: <PendingIcon />,
       color: "#607d8b",
     },
   ];
 
-  // Groupe 2 : indicateurs financiers (montants)
   const financialKpis = [
     {
       label: "Total facturé",
@@ -167,7 +184,6 @@ export const Dashboard = () => {
     },
   ];
 
-  // Couleur fixe par statut
   const STATUS_COLORS = {
     accepted: "#4caf50",
     pending: "#ff9800",
@@ -175,7 +191,6 @@ export const Dashboard = () => {
     validated: "#2196f3",
   };
 
-  // Labels d'affichage pour les statuts
   const STATUS_LABELS = {
     accepted: "Acceptés",
     pending: "En attente",
@@ -183,12 +198,11 @@ export const Dashboard = () => {
     validated: "Validés",
   };
 
-  // Préparer les données pour le graphique
   const devisStatusData = Object.keys(STATUS_COLORS)
     .map((status) => ({
       name: STATUS_LABELS[status],
       status: status,
-      value: devis.filter((d) => d.status === status).length,
+      value: safeDevis.filter((d) => d.status === status).length,
     }))
     .filter((entry) => entry.value > 0);
 
@@ -199,19 +213,34 @@ export const Dashboard = () => {
         ? "#ed6c02"
         : "#d32f2f";
 
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "50vh",
+        }}
+      >
+        <CircularProgress />
+        <Typography sx={{ ml: 2 }}>Chargement des données...</Typography>
+      </Box>
+    );
+  }
+
   return (
     <Box>
-      {/* Header amélioré */}
+      {/* Header */}
       <Box
         sx={{
           mb: 4,
           p: 3.5,
           borderRadius: 4,
-          background: (theme) =>
-            `linear-gradient(135deg, ${theme.palette.primary.main}18, ${theme.palette.primary.light}06, ${theme.palette.background.paper})`,
-          border: (theme) => `2px solid ${theme.palette.primary.main}25`,
+          background: `linear-gradient(135deg, ${theme.palette.primary.main}18, ${theme.palette.primary.light}06, ${theme.palette.background.paper})`,
+          border: `2px solid ${theme.palette.primary.main}25`,
           textAlign: "center",
-          boxShadow: (theme) => `0 4px 20px ${theme.palette.primary.main}20`,
+          boxShadow: `0 4px 20px ${theme.palette.primary.main}20`,
           position: "relative",
           overflow: "hidden",
           "&::before": {
@@ -221,8 +250,7 @@ export const Dashboard = () => {
             left: 0,
             right: 0,
             height: "4px",
-            background: (theme) =>
-              `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.success.main}, ${theme.palette.primary.main})`,
+            background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.success.main}, ${theme.palette.primary.main})`,
             backgroundSize: "200% 100%",
             animation: "gradientMove 3s linear infinite",
           },
@@ -242,7 +270,6 @@ export const Dashboard = () => {
             Tableau de bord
           </Typography>
         </Box>
-
         <Typography
           variant="body1"
           color="text.secondary"
@@ -258,9 +285,8 @@ export const Dashboard = () => {
         </Typography>
       </Box>
 
-      {/* Section 1 : KPIs (Activité + Finances) à gauche, jauge à droite centrée verticalement */}
+      {/* KPIs */}
       <Grid container spacing={3}>
-        {/* Colonne gauche : les deux lignes de KPIs empilées */}
         <Grid item xs={12} md={8}>
           <Box
             sx={{
@@ -275,20 +301,15 @@ export const Dashboard = () => {
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 1,
-                background: (theme) => `${theme.palette.primary.main}08`,
+                background: `${theme.palette.primary.main}08`,
                 px: 3,
                 py: 1,
                 borderRadius: 50,
-                border: (theme) => `1px solid ${theme.palette.primary.main}20`,
+                border: `1px solid ${theme.palette.primary.main}20`,
               }}
             >
               <TrendingUpRoundedIcon color="primary" fontSize="small" />
-              <Typography
-                variant="h6"
-                fontWeight={700}
-                color="primary"
-                sx={{ letterSpacing: 0.5 }}
-              >
+              <Typography variant="h6" fontWeight={700} color="primary">
                 Performance commerciale
               </Typography>
             </Box>
@@ -315,20 +336,15 @@ export const Dashboard = () => {
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 1,
-                background: (theme) => `${theme.palette.success.main}08`,
+                background: `${theme.palette.success.main}08`,
                 px: 3,
                 py: 1,
                 borderRadius: 50,
-                border: (theme) => `1px solid ${theme.palette.success.main}20`,
+                border: `1px solid ${theme.palette.success.main}20`,
               }}
             >
               <EuroIcon color="success" fontSize="small" />
-              <Typography
-                variant="h6"
-                fontWeight={700}
-                color="success.main"
-                sx={{ letterSpacing: 0.5 }}
-              >
+              <Typography variant="h6" fontWeight={700} color="success.main">
                 Aperçu financier
               </Typography>
             </Box>
@@ -342,7 +358,7 @@ export const Dashboard = () => {
           </Grid>
         </Grid>
 
-        {/* Colonne droite : jauge du taux d'encaissement - AMÉLIORÉE */}
+        {/* Jauge */}
         <Grid item xs={12} md={4}>
           <Card
             sx={{
@@ -351,16 +367,13 @@ export const Dashboard = () => {
               flexDirection: "column",
               justifyContent: "center",
               borderRadius: 4,
-              border: (theme) => `2px solid ${theme.palette.success.main}25`,
-              background: (theme) =>
-                `linear-gradient(135deg, ${theme.palette.success.main}05, ${theme.palette.background.paper})`,
-              boxShadow: (theme) =>
-                `0 4px 20px ${theme.palette.success.main}15`,
+              border: `2px solid ${theme.palette.success.main}25`,
+              background: `linear-gradient(135deg, ${theme.palette.success.main}05, ${theme.palette.background.paper})`,
+              boxShadow: `0 4px 20px ${theme.palette.success.main}15`,
               transition: "all 0.3s ease",
               "&:hover": {
                 transform: "translateY(-4px)",
-                boxShadow: (theme) =>
-                  `0 8px 30px ${theme.palette.success.main}25`,
+                boxShadow: `0 8px 30px ${theme.palette.success.main}25`,
               },
             }}
           >
@@ -372,12 +385,11 @@ export const Dashboard = () => {
                   justifyContent: "center",
                   gap: 1,
                   mb: 2,
-                  background: (theme) => `${theme.palette.success.main}08`,
+                  background: `${theme.palette.success.main}08`,
                   px: 2,
                   py: 1,
                   borderRadius: 50,
-                  border: (theme) =>
-                    `1px solid ${theme.palette.success.main}20`,
+                  border: `1px solid ${theme.palette.success.main}20`,
                   width: "fit-content",
                   mx: "auto",
                 }}
@@ -395,7 +407,7 @@ export const Dashboard = () => {
                 sx={{
                   mb: 3,
                   lineHeight: 1.7,
-                  background: (theme) => `${theme.palette.grey[100]}60`,
+                  background: `${theme.palette.grey[100]}60`,
                   p: 1.5,
                   borderRadius: 2,
                 }}
@@ -420,11 +432,7 @@ export const Dashboard = () => {
               <CustomLinearProgress
                 variant="determinate"
                 value={Math.min(encaissementPercentage, 100)}
-                sx={{
-                  height: 12,
-                  borderRadius: 6,
-                  mb: 1,
-                }}
+                sx={{ height: 12, borderRadius: 6, mb: 1 }}
               />
 
               <Box
@@ -433,10 +441,10 @@ export const Dashboard = () => {
                   justifyContent: "space-between",
                   mt: 2,
                   pt: 2,
-                  borderTop: (theme) => `1px solid ${theme.palette.divider}`,
+                  borderTop: `1px solid ${theme.palette.divider}`,
                 }}
               >
-                <Box sx={{ textAlign: "left" }}>
+                <Box>
                   <Typography
                     variant="caption"
                     color="text.secondary"
@@ -448,7 +456,6 @@ export const Dashboard = () => {
                     {totalPaid.toFixed(2)} DT
                   </Typography>
                 </Box>
-
                 <Box sx={{ textAlign: "right" }}>
                   <Typography
                     variant="caption"
@@ -467,25 +474,20 @@ export const Dashboard = () => {
         </Grid>
       </Grid>
 
-      {/* Section 4 : Graphiques côte à côte */}
-      <Grid container spacing={15} sx={{ mt: 10 }}>
-        {/* ==================== Répartition des devis - AMÉLIORÉE ==================== */}
+      {/* Graphiques */}
+      <Grid container spacing={4} sx={{ mt: 4 }}>
         <Grid item xs={12} md={6}>
           <Card
             sx={{
               height: "100%",
               borderRadius: 4,
-              border: "2px solid",
-              borderColor: "primary.main",
-              background: (theme) =>
-                `linear-gradient(135deg, ${theme.palette.primary.main}04, ${theme.palette.background.paper})`,
-              boxShadow: (theme) =>
-                `0 4px 20px ${theme.palette.primary.main}15`,
+              border: `2px solid ${theme.palette.primary.main}25`,
+              background: `linear-gradient(135deg, ${theme.palette.primary.main}04, ${theme.palette.background.paper})`,
+              boxShadow: `0 4px 20px ${theme.palette.primary.main}15`,
               transition: "all 0.3s ease",
               "&:hover": {
                 transform: "translateY(-6px)",
-                boxShadow: (theme) =>
-                  `0 10px 35px ${theme.palette.primary.main}25`,
+                boxShadow: `0 10px 35px ${theme.palette.primary.main}25`,
                 borderColor: "primary.dark",
               },
             }}
@@ -497,22 +499,19 @@ export const Dashboard = () => {
                   alignItems: "center",
                   gap: 1,
                   mb: 1,
-                  background: (theme) => `${theme.palette.primary.main}08`,
+                  background: `${theme.palette.primary.main}08`,
                   px: 2,
                   py: 1,
                   borderRadius: 50,
-                  border: (theme) =>
-                    `1px solid ${theme.palette.primary.main}20`,
+                  border: `1px solid ${theme.palette.primary.main}20`,
                   width: "fit-content",
                 }}
               >
                 <PieChartRoundedIcon color="primary" />
-
                 <Typography variant="h6" fontWeight={700} color="primary.main">
                   Répartition des devis
                 </Typography>
               </Box>
-
               <Typography
                 variant="body2"
                 color="text.secondary"
@@ -520,7 +519,6 @@ export const Dashboard = () => {
               >
                 Visualisez la répartition de vos devis selon leur statut.
               </Typography>
-
               {devisStatusData.length === 0 ? (
                 <Box
                   sx={{
@@ -555,7 +553,6 @@ export const Dashboard = () => {
                         />
                       ))}
                     </Pie>
-
                     <RechartsTooltip
                       formatter={(value, name) => [`${value} devis`, name]}
                       contentStyle={{
@@ -564,13 +561,9 @@ export const Dashboard = () => {
                         boxShadow: "0 6px 18px rgba(0,0,0,.15)",
                       }}
                     />
-
                     <Legend
                       verticalAlign="bottom"
-                      wrapperStyle={{
-                        paddingTop: 15,
-                        fontSize: 13,
-                      }}
+                      wrapperStyle={{ paddingTop: 15, fontSize: 13 }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
@@ -579,23 +572,18 @@ export const Dashboard = () => {
           </Card>
         </Grid>
 
-        {/* ==================== Comparaison financière - AMÉLIORÉE ==================== */}
         <Grid item xs={12} md={6}>
           <Card
             sx={{
               height: "100%",
               borderRadius: 4,
-              border: "2px solid",
-              borderColor: "success.main",
-              background: (theme) =>
-                `linear-gradient(135deg, ${theme.palette.success.main}04, ${theme.palette.background.paper})`,
-              boxShadow: (theme) =>
-                `0 4px 20px ${theme.palette.success.main}15`,
+              border: `2px solid ${theme.palette.success.main}25`,
+              background: `linear-gradient(135deg, ${theme.palette.success.main}04, ${theme.palette.background.paper})`,
+              boxShadow: `0 4px 20px ${theme.palette.success.main}15`,
               transition: "all 0.3s ease",
               "&:hover": {
                 transform: "translateY(-6px)",
-                boxShadow: (theme) =>
-                  `0 10px 35px ${theme.palette.success.main}25`,
+                boxShadow: `0 10px 35px ${theme.palette.success.main}25`,
                 borderColor: "success.dark",
               },
             }}
@@ -607,22 +595,19 @@ export const Dashboard = () => {
                   alignItems: "center",
                   gap: 1,
                   mb: 1,
-                  background: (theme) => `${theme.palette.success.main}08`,
+                  background: `${theme.palette.success.main}08`,
                   px: 2,
                   py: 1,
                   borderRadius: 50,
-                  border: (theme) =>
-                    `1px solid ${theme.palette.success.main}20`,
+                  border: `1px solid ${theme.palette.success.main}20`,
                   width: "fit-content",
                 }}
               >
                 <BarChartRoundedIcon color="success" />
-
                 <Typography variant="h6" fontWeight={700} color="success.main">
                   Comparaison financière
                 </Typography>
               </Box>
-
               <Typography
                 variant="body2"
                 color="text.secondary"
@@ -631,7 +616,6 @@ export const Dashboard = () => {
                 Comparez les montants facturés, encaissés et restant à
                 percevoir.
               </Typography>
-
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart
                   data={[
@@ -641,11 +625,8 @@ export const Dashboard = () => {
                   ]}
                 >
                   <CartesianGrid strokeDasharray="4 4" vertical={false} />
-
                   <XAxis dataKey="name" />
-
                   <YAxis />
-
                   <RechartsTooltip
                     formatter={(value) => `${value.toFixed(2)} DT`}
                     contentStyle={{
@@ -654,7 +635,6 @@ export const Dashboard = () => {
                       boxShadow: "0 6px 18px rgba(0,0,0,.15)",
                     }}
                   />
-
                   <Bar dataKey="value" fill="#3b82f6" radius={[8, 8, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>

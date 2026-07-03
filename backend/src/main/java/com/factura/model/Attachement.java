@@ -1,5 +1,7 @@
 package com.factura.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.Date;
@@ -18,9 +20,13 @@ public class Attachement {
     @Column(unique = true, nullable = false)
     private String number;
 
+    @JsonBackReference  // ← AJOUTER
     @OneToOne
     @JoinColumn(name = "bl_id", unique = true)
     private BL bl;
+
+    @Column(name = "bl_number")
+    private String blNumber;
 
     @Temporal(TemporalType.DATE)
     private Date date;
@@ -44,6 +50,7 @@ public class Attachement {
     @Temporal(TemporalType.TIMESTAMP)
     private Date updatedAt;
 
+    @JsonManagedReference  // ← AJOUTER
     @OneToOne(mappedBy = "attachement", cascade = CascadeType.ALL)
     private Facture facture;
 

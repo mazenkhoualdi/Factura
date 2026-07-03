@@ -1,5 +1,6 @@
 package com.factura.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.Date;
@@ -18,9 +19,13 @@ public class Paiement {
     @Column(unique = true, nullable = false)
     private String reference;
 
+    @JsonBackReference  // ← AJOUTER
     @ManyToOne
     @JoinColumn(name = "facture_id")
     private Facture facture;
+
+    @Column(name = "facture_number")
+    private String factureNumber;
 
     @Temporal(TemporalType.DATE)
     private Date date;

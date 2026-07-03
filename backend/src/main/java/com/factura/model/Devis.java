@@ -1,5 +1,6 @@
 package com.factura.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.Date;
@@ -18,6 +19,7 @@ public class Devis {
     @Column(unique = true, nullable = false)
     private String number;
 
+    @JsonBackReference
     @ManyToOne
     @JoinColumn(name = "client_id")
     private Client client;
@@ -62,13 +64,6 @@ public class Devis {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = new Date();
-    }
-
-    // ============================================================
-    // MÉTHODE GETTER POUR clientId (AJOUTÉE)
-    // ============================================================
-    public UUID getClientId() {
-        return client != null ? client.getId() : null;
     }
 
     public enum DevisStatus {

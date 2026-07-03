@@ -1,9 +1,7 @@
 package com.factura.controller;
 
-import com.factura.model.Client;
 import com.factura.model.Devis;
-import com.factura.repository.ClientRepository;
-import com.factura.repository.DevisRepository;
+import com.factura.service.DevisService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -25,93 +23,46 @@ import java.util.UUID;
 @CrossOrigin(origins = "http://localhost:5173")
 @RequiredArgsConstructor
 public class DevisController {
-    private final DevisRepository devisRepository;
-    private final ClientRepository clientRepository;
+    private final DevisService devisService;
 
     @GetMapping
     public List<Devis> getAllDevis() {
-        return devisRepository.findAll();
+        return devisService.getAllDevis();
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Devis> getDevisById(@PathVariable UUID id) {
-        return devisRepository.findById(id)
+        return devisService.getDevisById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<Devis> createDevis(@RequestBody Devis devis) {
-        // Récupérer le client pour mettre à jour le clientName
-        if (devis.getClientId() != null) {
-            Client client = clientRepository.findById(devis.getClientId()).orElse(null);
-            if (client != null) {
-                devis.setClient(client);
-                devis.setClientName(client.getFirstName() + " " + client.getLastName());
-            }
-        }
-        Devis saved = devisRepository.save(devis);
-        return ResponseEntity.ok(saved);
+    public Devis createDevis(@RequestBody Devis devis) {
+        return devisService.createDevis(devis);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Devis> updateDevis(@PathVariable UUID id, @RequestBody Devis devisDetails) {
-        return devisRepository.findById(id)
-                .map(devis -> {
-                    devis.setNumber(devisDetails.getNumber());
-                    
-                    // Mettre à jour le client si présent
-                    if (devisDetails.getClientId() != null) {
-                        Client client = clientRepository.findById(devisDetails.getClientId()).orElse(null);
-                        if (client != null) {
-                            devis.setClient(client);
-                            devis.setClientName(client.getFirstName() + " " + client.getLastName());
-                        }
-                    }
-                    
-                    devis.setDate(devisDetails.getDate());
-                    devis.setExpirationDate(devisDetails.getExpirationDate());
-                    devis.setDescription(devisDetails.getDescription());
-                    devis.setAmount(devisDetails.getAmount());
-                    devis.setStatus(devisDetails.getStatus());
-                    devis.setComments(devisDetails.getComments());
-                    return ResponseEntity.ok(devisRepository.save(devis));
-                })
-                .orElse(ResponseEntity.notFound().build());
+        try {
+            Devis updated = devisService.updateDevis(id, devisDetails);
+            return ResponseEntity.ok(updated);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteDevis(@PathVariable UUID id) {
-        devisRepository.deleteById(id);
+        devisService.deleteDevis(id);
         return ResponseEntity.noContent().build();
     }
 
-    // ============================================================
-    // GESTION PDF
-    // ============================================================
     @PostMapping("/{id}/pdf")
     public ResponseEntity<String> uploadPdf(@PathVariable UUID id, @RequestParam("file") MultipartFile file) {
         try {
-            Devis devis = devisRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("Devis not found"));
-
-            String uploadDir = "uploads/devis/";
-            Path uploadPath = Paths.get(uploadDir);
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
-            }
-
-            String originalFileName = file.getOriginalFilename();
-            String cleanFileName = System.currentTimeMillis() + "_" + originalFileName.replaceAll("[^a-zA-Z0-9.\\-]", "_");
-            Path filePath = uploadPath.resolve(cleanFileName);
-            Files.copy(file.getInputStream(), filePath);
-
-            String relativePath = uploadDir + cleanFileName;
-            devis.setPdfUrl(relativePath);
-            devis.setFileName(originalFileName);
-            devisRepository.save(devis);
-
-            return ResponseEntity.ok(filePath.toString());
+            String path = devisService.uploadPdf(id, file);
+            return ResponseEntity.ok(path);
         } catch (IOException e) {
             return ResponseEntity.internalServerError().body("Erreur lors de l'upload du PDF");
         }
@@ -120,7 +71,7 @@ public class DevisController {
     @GetMapping("/{id}/pdf")
     public ResponseEntity<Resource> downloadPdf(@PathVariable UUID id) {
         try {
-            Devis devis = devisRepository.findById(id)
+            Devis devis = devisService.getDevisById(id)
                     .orElseThrow(() -> new RuntimeException("Devis non trouvé"));
 
             if (devis.getPdfUrl() == null || devis.getPdfUrl().isEmpty()) {
@@ -153,7 +104,7 @@ public class DevisController {
     @GetMapping("/{id}/pdf/view")
     public ResponseEntity<Resource> viewPdf(@PathVariable UUID id) {
         try {
-            Devis devis = devisRepository.findById(id)
+            Devis devis = devisService.getDevisById(id)
                     .orElseThrow(() -> new RuntimeException("Devis non trouvé"));
 
             if (devis.getPdfUrl() == null || devis.getPdfUrl().isEmpty()) {
@@ -181,5 +132,14 @@ public class DevisController {
             e.printStackTrace();
             return ResponseEntity.internalServerError().build();
         }
+    }
+
+    // ============================================================
+    // METHODES POUR LA TRACABILITE
+    // ============================================================
+    
+    @GetMapping("/client/{clientId}")
+    public List<Devis> getDevisByClientId(@PathVariable UUID clientId) {
+        return devisService.getDevisByClientId(clientId);
     }
 }

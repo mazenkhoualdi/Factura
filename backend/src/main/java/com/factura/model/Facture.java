@@ -1,5 +1,7 @@
 package com.factura.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.Date;
@@ -19,9 +21,13 @@ public class Facture {
     @Column(unique = true, nullable = false)
     private String number;
 
+    @JsonBackReference  // ← AJOUTER
     @OneToOne
     @JoinColumn(name = "attachement_id", unique = true)
-    private Attachement attachement;  // <-- ATTENTION : le nom est "attachement" (sans 't')
+    private Attachement attachement;
+
+    @Column(name = "attachment_number")
+    private String attachmentNumber;
 
     @Temporal(TemporalType.DATE)
     private Date date;
@@ -42,6 +48,7 @@ public class Facture {
     @Temporal(TemporalType.TIMESTAMP)
     private Date updatedAt;
 
+    @JsonManagedReference  // ← AJOUTER
     @OneToMany(mappedBy = "facture", cascade = CascadeType.ALL)
     private List<Paiement> paiements;
 

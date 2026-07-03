@@ -76,7 +76,14 @@ const getStepIcon = (key) => {
 };
 
 export const Timeline = () => {
-  const { devis, bdc, bl, attachements, factures, paiements } = useAppContext();
+  const {
+    devis = [],
+    bdc = [],
+    bl = [],
+    attachements = [],
+    factures = [],
+    paiements = [],
+  } = useAppContext();
 
   // Construire les transactions à partir des données
   const transactions = devis.map((d) => {
@@ -125,7 +132,7 @@ export const Timeline = () => {
       `📄 ${stepLabel}\n\n` +
         `Numéro: ${doc.number || doc.reference || "N/A"}\n` +
         `Statut: ${getStatusLabel(doc.status)}\n` +
-        `Montant: ${doc.amount ? `${doc.amount.toLocaleString()} DT` : "N/A"}\n` +
+        `Montant: ${doc.amount ? `${doc.amount.toLocaleString()} €` : "N/A"}\n` +
         `Date: ${doc.date ? new Date(doc.date).toLocaleDateString("fr-FR") : "N/A"}\n` +
         `Description: ${doc.description || "Aucune"}`,
     );
@@ -325,7 +332,7 @@ export const Timeline = () => {
                                       color="text.secondary"
                                     >
                                       {step.doc.amount
-                                        ? `${step.doc.amount.toLocaleString()} DT`
+                                        ? `${step.doc.amount.toLocaleString()} €`
                                         : ""}
                                     </Typography>
                                   )}
@@ -362,7 +369,7 @@ export const Timeline = () => {
                                     >
                                       • {p.reference} –{" "}
                                       {p.amount
-                                        ? `${p.amount.toLocaleString()} DT`
+                                        ? `${p.amount.toLocaleString()} €`
                                         : ""}{" "}
                                       ({p.mode})
                                     </Typography>

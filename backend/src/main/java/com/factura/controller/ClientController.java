@@ -27,7 +27,10 @@ public class ClientController {
 
     @GetMapping
     public List<Client> getAllClients() {
-        return clientService.getAllClients();
+        // Récupérer les clients sans leurs devis pour éviter la récursion
+        List<Client> clients = clientService.getAllClients();
+        // On pourrait aussi utiliser des DTOs ici
+        return clients;
     }
 
     @GetMapping("/{id}")
@@ -58,15 +61,16 @@ public class ClientController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{id}/pdf")
-    public ResponseEntity<String> uploadPdf(@PathVariable UUID id, @RequestParam("file") MultipartFile file) {
-        try {
-            String path = clientService.uploadPdf(id, file);
-            return ResponseEntity.ok(path);
-        } catch (IOException e) {
-            return ResponseEntity.internalServerError().body("Erreur lors de l'upload du PDF");
-        }
+   @PostMapping("/{id}/pdf")
+public ResponseEntity<String> uploadPdf(@PathVariable UUID id, @RequestParam("file") MultipartFile file) {
+    try {
+        String path = clientService.uploadPdf(id, file);
+        return ResponseEntity.ok(path);
+    } catch (Exception e) {
+        e.printStackTrace();  // ← Afficher l'erreur dans les logs
+        return ResponseEntity.internalServerError().body("Erreur lors de l'upload du PDF: " + e.getMessage());
     }
+}
 
     // Télécharger le PDF (attachment)
     @GetMapping("/{id}/pdf")
