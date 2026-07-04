@@ -81,11 +81,7 @@ const KpiCard = ({ label, value, icon, color }) => {
           }}
         >
           <Box>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              fontWeight={600}
-            >
+            <Typography variant="caption" color="text.secondary" fontWeight={600}>
               {label}
             </Typography>
             <Typography
@@ -125,10 +121,7 @@ export const Dashboard = () => {
   const safeFactures = Array.isArray(factures) ? factures : [];
   const safePaiements = Array.isArray(paiements) ? paiements : [];
 
-  const totalFactured = safeFactures.reduce(
-    (sum, f) => sum + (f.amount || 0),
-    0,
-  );
+  const totalFactured = safeFactures.reduce((sum, f) => sum + (f.amount || 0), 0);
   const totalPaid = safePaiements.reduce((sum, p) => sum + (p.amount || 0), 0);
   const totalRemaining = totalFactured - totalPaid;
 
@@ -137,51 +130,16 @@ export const Dashboard = () => {
 
   // KPIs
   const activityKpis = [
-    {
-      label: "Clients",
-      value: safeClients.length,
-      icon: <PeopleIcon />,
-      color: "#1976d2",
-    },
-    {
-      label: "Devis",
-      value: safeDevis.length,
-      icon: <DescriptionIcon />,
-      color: "#ed6c02",
-    },
-    {
-      label: "Factures",
-      value: safeFactures.length,
-      icon: <ReceiptLongIcon />,
-      color: "#9c27b0",
-    },
-    {
-      label: "Dossiers en cours",
-      value: safeDevis.filter((d) => d.status === "pending").length,
-      icon: <PendingIcon />,
-      color: "#607d8b",
-    },
+    { label: "Clients", value: safeClients.length, icon: <PeopleIcon />, color: "#1976d2" },
+    { label: "Devis", value: safeDevis.length, icon: <DescriptionIcon />, color: "#ed6c02" },
+    { label: "Factures", value: safeFactures.length, icon: <ReceiptLongIcon />, color: "#9c27b0" },
+    { label: "Dossiers en cours", value: safeDevis.filter((d) => d.status === "pending").length, icon: <PendingIcon />, color: "#607d8b" },
   ];
 
   const financialKpis = [
-    {
-      label: "Total facturé",
-      value: `${totalFactured.toFixed(2)} DT`,
-      icon: <EuroIcon />,
-      color: "#1976d2",
-    },
-    {
-      label: "Total encaissé",
-      value: `${totalPaid.toFixed(2)} DT`,
-      icon: <PaymentsIcon />,
-      color: "#2e7d32",
-    },
-    {
-      label: "Reste à encaisser",
-      value: `${totalRemaining.toFixed(2)} DT`,
-      icon: <MoneyOffIcon />,
-      color: "#d32f2f",
-    },
+    { label: "Total facturé", value: `${totalFactured.toFixed(2)} DT`, icon: <EuroIcon />, color: "#1976d2" },
+    { label: "Total encaissé", value: `${totalPaid.toFixed(2)} DT`, icon: <PaymentsIcon />, color: "#2e7d32" },
+    { label: "Reste à encaisser", value: `${totalRemaining.toFixed(2)} DT`, icon: <MoneyOffIcon />, color: "#d32f2f" },
   ];
 
   const STATUS_COLORS = {
@@ -285,7 +243,7 @@ export const Dashboard = () => {
         </Typography>
       </Box>
 
-      {/* KPIs */}
+      {/* KPIs - Correction des props */}
       <Grid container spacing={3}>
         <Grid item xs={12} md={8}>
           <Box
@@ -445,11 +403,7 @@ export const Dashboard = () => {
                 }}
               >
                 <Box>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    fontWeight={600}
-                  >
+                  <Typography variant="caption" color="text.secondary" fontWeight={600}>
                     Encaissé
                   </Typography>
                   <Typography fontWeight={700} color="success.main">
@@ -457,11 +411,7 @@ export const Dashboard = () => {
                   </Typography>
                 </Box>
                 <Box sx={{ textAlign: "right" }}>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    fontWeight={600}
-                  >
+                  <Typography variant="caption" color="text.secondary" fontWeight={600}>
                     Facturé
                   </Typography>
                   <Typography fontWeight={700} color="primary">
@@ -512,25 +462,12 @@ export const Dashboard = () => {
                   Répartition des devis
                 </Typography>
               </Box>
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ mb: 3, mt: 1 }}
-              >
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3, mt: 1 }}>
                 Visualisez la répartition de vos devis selon leur statut.
               </Typography>
               {devisStatusData.length === 0 ? (
-                <Box
-                  sx={{
-                    height: 280,
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                  }}
-                >
-                  <Typography color="text.secondary">
-                    Aucun devis disponible
-                  </Typography>
+                <Box sx={{ height: 280, display: "flex", justifyContent: "center", alignItems: "center" }}>
+                  <Typography color="text.secondary">Aucun devis disponible</Typography>
                 </Box>
               ) : (
                 <ResponsiveContainer width="100%" height={300}>
@@ -547,24 +484,14 @@ export const Dashboard = () => {
                       label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
                     >
                       {devisStatusData.map((entry) => (
-                        <Cell
-                          key={entry.status}
-                          fill={STATUS_COLORS[entry.status]}
-                        />
+                        <Cell key={entry.status} fill={STATUS_COLORS[entry.status]} />
                       ))}
                     </Pie>
                     <RechartsTooltip
                       formatter={(value, name) => [`${value} devis`, name]}
-                      contentStyle={{
-                        borderRadius: 12,
-                        border: "none",
-                        boxShadow: "0 6px 18px rgba(0,0,0,.15)",
-                      }}
+                      contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 6px 18px rgba(0,0,0,.15)" }}
                     />
-                    <Legend
-                      verticalAlign="bottom"
-                      wrapperStyle={{ paddingTop: 15, fontSize: 13 }}
-                    />
+                    <Legend verticalAlign="bottom" wrapperStyle={{ paddingTop: 15, fontSize: 13 }} />
                   </PieChart>
                 </ResponsiveContainer>
               )}
@@ -608,13 +535,8 @@ export const Dashboard = () => {
                   Comparaison financière
                 </Typography>
               </Box>
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ mb: 3, mt: 1 }}
-              >
-                Comparez les montants facturés, encaissés et restant à
-                percevoir.
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3, mt: 1 }}>
+                Comparez les montants facturés, encaissés et restant à percevoir.
               </Typography>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart
@@ -629,11 +551,7 @@ export const Dashboard = () => {
                   <YAxis />
                   <RechartsTooltip
                     formatter={(value) => `${value.toFixed(2)} DT`}
-                    contentStyle={{
-                      borderRadius: 12,
-                      border: "none",
-                      boxShadow: "0 6px 18px rgba(0,0,0,.15)",
-                    }}
+                    contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 6px 18px rgba(0,0,0,.15)" }}
                   />
                   <Bar dataKey="value" fill="#3b82f6" radius={[8, 8, 0, 0]} />
                 </BarChart>

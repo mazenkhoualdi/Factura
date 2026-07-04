@@ -113,7 +113,6 @@ export const BdcList = () => {
   const loadDevis = async () => {
     try {
       const response = await api.get("/devis");
-      // Vérifier que la réponse est bien un tableau
       setDevisList(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error("Erreur chargement devis", error);
@@ -146,9 +145,13 @@ export const BdcList = () => {
 
     setAddLoading(true);
     try {
+      // Récupérer le devis sélectionné pour obtenir son numéro
+      const selectedDevis = devisList.find((d) => d.id === newBdc.devisId);
+
       const data = {
         ...newBdc,
         amount: parseFloat(newBdc.amount) || 0,
+        devisNumber: selectedDevis?.number || "", // ← AJOUT CRUCIAL
       };
       const response = await api.post("/bdc", data);
 
@@ -209,9 +212,15 @@ export const BdcList = () => {
 
     setEditLoading(true);
     try {
+      // Récupérer le devis sélectionné pour obtenir son numéro
+      const selectedDevis = devisList.find(
+        (d) => d.id === editFormData.devisId,
+      );
+
       const data = {
         ...editFormData,
         amount: parseFloat(editFormData.amount) || 0,
+        devisNumber: selectedDevis?.number || "", // ← AJOUT CRUCIAL
       };
       await api.put(`/bdc/${editingBdc.id}`, data);
 
@@ -397,7 +406,9 @@ export const BdcList = () => {
                 filteredBdc.map((d) => (
                   <TableRow key={d.id} hover>
                     <TableCell>{d.number}</TableCell>
-                    <TableCell>{d.devisNumber || d.devis?.number}</TableCell>
+                    <TableCell>
+                      {d.devisNumber || d.devis?.number || "-"}
+                    </TableCell>
                     <TableCell>
                       {d.date
                         ? new Date(d.date).toLocaleDateString("fr-FR")
@@ -495,9 +506,9 @@ export const BdcList = () => {
                 <Select
                   value={newBdc.devisId}
                   onChange={(e) => {
-                    const devis = Array.isArray(devisList)
-                      ? devisList.find((d) => d.id === e.target.value)
-                      : null;
+                    const devis = devisList.find(
+                      (d) => d.id === e.target.value,
+                    );
                     setNewBdc({
                       ...newBdc,
                       devisId: e.target.value,
@@ -506,12 +517,11 @@ export const BdcList = () => {
                   }}
                   label="Devis source"
                 >
-                  {Array.isArray(devisList) &&
-                    devisList.map((d) => (
-                      <MenuItem key={d.id} value={d.id}>
-                        {d.number}
-                      </MenuItem>
-                    ))}
+                  {devisList.map((d) => (
+                    <MenuItem key={d.id} value={d.id}>
+                      {d.number}
+                    </MenuItem>
+                  ))}
                 </Select>
               </FormControl>
             </Grid>
@@ -636,9 +646,9 @@ export const BdcList = () => {
                 <Select
                   value={editFormData.devisId}
                   onChange={(e) => {
-                    const devis = Array.isArray(devisList)
-                      ? devisList.find((d) => d.id === e.target.value)
-                      : null;
+                    const devis = devisList.find(
+                      (d) => d.id === e.target.value,
+                    );
                     setEditFormData({
                       ...editFormData,
                       devisId: e.target.value,
@@ -647,12 +657,11 @@ export const BdcList = () => {
                   }}
                   label="Devis source"
                 >
-                  {Array.isArray(devisList) &&
-                    devisList.map((d) => (
-                      <MenuItem key={d.id} value={d.id}>
-                        {d.number}
-                      </MenuItem>
-                    ))}
+                  {devisList.map((d) => (
+                    <MenuItem key={d.id} value={d.id}>
+                      {d.number}
+                    </MenuItem>
+                  ))}
                 </Select>
               </FormControl>
             </Grid>
@@ -830,7 +839,9 @@ export const BdcList = () => {
                     Devis source
                   </Typography>
                   <Typography>
-                    {selectedBdc.devisNumber || selectedBdc.devis?.number}
+                    {selectedBdc.devisNumber ||
+                      selectedBdc.devis?.number ||
+                      "-"}
                   </Typography>
                 </Grid>
                 <Grid item xs={12} sm={6}>
