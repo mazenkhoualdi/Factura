@@ -261,7 +261,7 @@ export const AttachmentsList = () => {
       alert("✅ Attachement supprimé avec succès !");
     } catch (error) {
       console.error("Erreur suppression attachement", error);
-      alert("❌ Erreur lors de la suppression de l'attachement");
+      alert("❌ erreur lors de la suppression de l'attachement");
     } finally {
       setDeleteLoading(false);
     }
@@ -975,3 +975,4 @@ export const AttachmentsList = () => {
     </Box>
   );
 };
+
