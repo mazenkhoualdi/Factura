@@ -9,5 +9,6 @@ import java.util.UUID;
 @Repository
 public interface AttachementRepository extends JpaRepository<Attachement, UUID> {
     Attachement findByNumber(String number);
+    Attachement findByBlNumber(String blNumber);
     Optional<Attachement> findByBlId(UUID blId);  // <-- AJOUTER CETTE MÉTHODE
 }
