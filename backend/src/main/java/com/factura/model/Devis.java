@@ -1,6 +1,7 @@
 package com.factura.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.Date;
@@ -52,6 +53,7 @@ public class Devis {
     @Temporal(TemporalType.TIMESTAMP)
     private Date updatedAt;
 
+    @JsonManagedReference
     @OneToOne(mappedBy = "devis", cascade = CascadeType.ALL)
     private BDC bdc;
 
