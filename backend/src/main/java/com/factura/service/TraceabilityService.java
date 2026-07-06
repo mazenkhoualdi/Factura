@@ -6,8 +6,18 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+/**
+ * Reconstitue le parcours complet d'un document (Devis -> BDC -> BL -> Attachement -> Facture -> Paiements).
+ *
+ * IMPORTANT: dans cette application, les documents ne sont PAS reliés entre eux par de vraies relations
+ * JPA persistées (les champs @OneToOne comme BDC.devis, BL.bdc, etc. ne sont jamais renseignés à la
+ * création). Le seul lien fiable entre deux documents est le numéro dénormalisé stocké sur l'enfant
+ * (ex: BL.bdcNumber contient le "number" du BDC source). Toute la logique ci-dessous navigue donc
+ * exclusivement par ces numéros, jamais par les relations Java, afin de refléter la réalité des données.
+ */
 @Service
 @RequiredArgsConstructor
 public class TraceabilityService {
@@ -20,122 +30,139 @@ public class TraceabilityService {
 
     public Map<String, Object> search(String query) {
         Map<String, Object> result = new HashMap<>();
+        if (query == null || query.isBlank()) {
+            return result;
+        }
+        String q = query.trim();
 
-        // Rechercher un Devis
-        Devis devis = devisRepository.findByNumber(query);
+        Devis devis = devisRepository.findByNumber(q);
         if (devis != null) {
             result.put("type", "devis");
             result.put("document", devis);
-            result.put("client", devis.getClient());
-
-            BDC bdc = devis.getBdc();
-            if (bdc != null) {
-                result.put("bdc", bdc);
-                BL bl = bdc.getBl();
-                if (bl != null) {
-                    result.put("bl", bl);
-                    Attachement att = bl.getAttachement();
-                    if (att != null) {
-                        result.put("attachement", att);
-                        Facture facture = att.getFacture();
-                        if (facture != null) {
-                            result.put("facture", facture);
-                            result.put("paiements", facture.getPaiements());
-                        }
-                    }
-                }
-            }
+            buildChainFromDevis(result, devis);
             return result;
         }
 
-        // Rechercher un BDC
-        BDC bdc = bdcRepository.findByNumber(query);
+        BDC bdc = bdcRepository.findByNumber(q);
         if (bdc != null) {
             result.put("type", "bdc");
             result.put("document", bdc);
-            result.put("devis", bdc.getDevis());
-            result.put("client", bdc.getDevis().getClient());
-            BL bl = bdc.getBl();
-            if (bl != null) {
-                result.put("bl", bl);
-                Attachement att = bl.getAttachement();
-                if (att != null) {
-                    result.put("attachement", att);
-                    Facture facture = att.getFacture();
-                    if (facture != null) {
-                        result.put("facture", facture);
-                        result.put("paiements", facture.getPaiements());
-                    }
-                }
-            }
+            buildChainFromDevis(result, devisRepository.findByNumber(bdc.getDevisNumber()));
             return result;
         }
 
-        // Rechercher un BL
-        BL bl = blRepository.findByNumber(query);
+        BL bl = blRepository.findByNumber(q);
         if (bl != null) {
             result.put("type", "bl");
             result.put("document", bl);
-            result.put("bdc", bl.getBdc());
-            result.put("devis", bl.getBdc().getDevis());
-            result.put("client", bl.getBdc().getDevis().getClient());
-            Attachement att = bl.getAttachement();
-            if (att != null) {
-                result.put("attachement", att);
-                Facture facture = att.getFacture();
-                if (facture != null) {
-                    result.put("facture", facture);
-                    result.put("paiements", facture.getPaiements());
-                }
-            }
+            buildChainFromDevis(result, resolveDevisFromBdcNumber(bl.getBdcNumber()));
             return result;
         }
 
-        // Rechercher un Attachement
-        Attachement att = attachementRepository.findByNumber(query);
-        if (att != null) {
+        Attachement attachement = attachementRepository.findByNumber(q);
+        if (attachement != null) {
             result.put("type", "attachement");
-            result.put("document", att);
-            result.put("bl", att.getBl());
-            result.put("bdc", att.getBl().getBdc());
-            result.put("devis", att.getBl().getBdc().getDevis());
-            result.put("client", att.getBl().getBdc().getDevis().getClient());
-            Facture facture = att.getFacture();
-            if (facture != null) {
-                result.put("facture", facture);
-                result.put("paiements", facture.getPaiements());
-            }
+            result.put("document", attachement);
+            buildChainFromDevis(result, resolveDevisFromBlNumber(attachement.getBlNumber()));
             return result;
         }
 
-        // Rechercher une Facture
-        Facture facture = factureRepository.findByNumber(query);
+        Facture facture = factureRepository.findByNumber(q);
         if (facture != null) {
             result.put("type", "facture");
             result.put("document", facture);
-            result.put("attachement", facture.getAttachement());
-            result.put("bl", facture.getAttachement().getBl());
-            result.put("bdc", facture.getAttachement().getBl().getBdc());
-            result.put("devis", facture.getAttachement().getBl().getBdc().getDevis());
-            result.put("client", facture.getAttachement().getBl().getBdc().getDevis().getClient());
-            result.put("paiements", facture.getPaiements());
+            buildChainFromDevis(result, resolveDevisFromAttachmentNumber(facture.getAttachmentNumber()));
             return result;
         }
 
-        // Rechercher un Paiement
-        Paiement paiement = paiementRepository.findByReference(query);
+        Paiement paiement = paiementRepository.findByReference(q);
         if (paiement != null) {
             result.put("type", "paiement");
             result.put("document", paiement);
-            result.put("facture", paiement.getFacture());
-            result.put("attachement", paiement.getFacture().getAttachement());
-            result.put("bl", paiement.getFacture().getAttachement().getBl());
-            result.put("bdc", paiement.getFacture().getAttachement().getBl().getBdc());
-            result.put("devis", paiement.getFacture().getAttachement().getBl().getBdc().getDevis());
-            result.put("client", paiement.getFacture().getAttachement().getBl().getBdc().getDevis().getClient());
+            buildChainFromDevis(result, resolveDevisFromFactureNumber(paiement.getFactureNumber()));
             return result;
         }
 
         return result;
+    }
+
+    // ------------------------------------------------------------------
+    // Remontée de la chaîne (à partir d'un maillon intermédiaire vers le Devis)
+    // ------------------------------------------------------------------
+
+    private Devis resolveDevisFromBdcNumber(String bdcNumber) {
+        if (bdcNumber == null) return null;
+        BDC bdc = bdcRepository.findByNumber(bdcNumber);
+        return bdc != null ? devisRepository.findByNumber(bdc.getDevisNumber()) : null;
+    }
+
+    private Devis resolveDevisFromBlNumber(String blNumber) {
+        if (blNumber == null) return null;
+        BL bl = blRepository.findByNumber(blNumber);
+        return bl != null ? resolveDevisFromBdcNumber(bl.getBdcNumber()) : null;
+    }
+
+    private Devis resolveDevisFromAttachmentNumber(String attachmentNumber) {
+        if (attachmentNumber == null) return null;
+        Attachement attachement = attachementRepository.findByNumber(attachmentNumber);
+        return attachement != null ? resolveDevisFromBlNumber(attachement.getBlNumber()) : null;
+    }
+
+    private Devis resolveDevisFromFactureNumber(String factureNumber) {
+        if (factureNumber == null) return null;
+        Facture facture = factureRepository.findByNumber(factureNumber);
+        return facture != null ? resolveDevisFromAttachmentNumber(facture.getAttachmentNumber()) : null;
+    }
+
+    // ------------------------------------------------------------------
+    // Descente de la chaîne (à partir du Devis vers les Paiements)
+    // S'arrête dès qu'un maillon est manquant, sans jamais lever de NullPointerException.
+    // ------------------------------------------------------------------
+
+    private void buildChainFromDevis(Map<String, Object> result, Devis devis) {
+        if (devis == null) {
+            return;
+        }
+        result.put("devis", devis);
+        result.put("client", buildClientInfo(devis));
+
+        BDC bdc = bdcRepository.findByDevisNumber(devis.getNumber());
+        if (bdc == null) {
+            return;
+        }
+        result.put("bdc", bdc);
+
+        BL bl = blRepository.findByBdcNumber(bdc.getNumber());
+        if (bl == null) {
+            return;
+        }
+        result.put("bl", bl);
+
+        Attachement attachement = attachementRepository.findByBlNumber(bl.getNumber());
+        if (attachement == null) {
+            return;
+        }
+        result.put("attachement", attachement);
+
+        Facture facture = factureRepository.findByAttachmentNumber(attachement.getNumber());
+        if (facture == null) {
+            return;
+        }
+        result.put("facture", facture);
+
+        List<Paiement> paiements = paiementRepository.findByFactureNumber(facture.getNumber());
+        result.put("paiements", paiements);
+    }
+
+    /**
+     * Le Devis ne porte pas de vraie relation Client exploitable (client_id n'est jamais renseigné) :
+     * seules les colonnes dénormalisées clientName/clientType le sont. On construit donc un petit
+     * objet d'affichage à partir de ces colonnes plutôt que de renvoyer un Client (toujours null).
+     */
+    private Map<String, Object> buildClientInfo(Devis devis) {
+        Map<String, Object> client = new HashMap<>();
+        client.put("number", devis.getClientName());
+        client.put("description", "society".equals(devis.getClientType()) ? "Société" : "Client");
+        return client;
     }
 }
