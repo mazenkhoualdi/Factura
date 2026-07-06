@@ -145,9 +145,11 @@ export const AttachmentsList = () => {
 
     setAddLoading(true);
     try {
+      const selectedBl = blList.find((d) => d.id === newAttachment.blId);
       const data = {
         ...newAttachment,
         amount: parseFloat(newAttachment.amount) || 0,
+        blNumber: selectedBl?.number || "", // ← AJOUT CRUCIAL
       };
       const response = await api.post("/attachements", data);
 
@@ -212,9 +214,11 @@ export const AttachmentsList = () => {
 
     setEditLoading(true);
     try {
+      const selectedBl = blList.find((d) => d.id === editFormData.blId);
       const data = {
         ...editFormData,
         amount: parseFloat(editFormData.amount) || 0,
+        blNumber: selectedBl?.number || "", // ← AJOUT CRUCIAL
       };
       await api.put(`/attachements/${editingAttachment.id}`, data);
 
