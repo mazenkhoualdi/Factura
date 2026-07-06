@@ -143,9 +143,13 @@ export const InvoicesList = () => {
 
     setAddLoading(true);
     try {
+      const selectedAttachment = attachments.find(
+        (d) => d.id === newInvoice.attachmentId,
+      );
       const data = {
         ...newInvoice,
         amount: parseFloat(newInvoice.amount) || 0,
+        attachmentNumber: selectedAttachment?.number || "", // ← AJOUT CRUCIAL
       };
       const response = await api.post("/factures", data);
 
@@ -207,9 +211,13 @@ export const InvoicesList = () => {
 
     setEditLoading(true);
     try {
+      const selectedAttachment = attachments.find(
+        (d) => d.id === editFormData.attachmentId,
+      );
       const data = {
         ...editFormData,
         amount: parseFloat(editFormData.amount) || 0,
+        attachmentNumber: selectedAttachment?.number || "", // ← AJOUT CRUCIAL
       };
       await api.put(`/factures/${editingInvoice.id}`, data);
 
