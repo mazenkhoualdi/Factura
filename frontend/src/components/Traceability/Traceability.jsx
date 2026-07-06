@@ -25,6 +25,7 @@ import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import PaymentsIcon from "@mui/icons-material/Payments";
 import PeopleIcon from "@mui/icons-material/People";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import CircleIcon from "@mui/icons-material/Circle";
 import api from "../../api/api";
 
 const getStatusLabel = (status) => {
@@ -140,7 +141,7 @@ export const Traceability = () => {
   const renderRoadmap = (data) => {
     const steps = [
       { key: "client", label: "Client", doc: data.client },
-      { key: "devis", label: "Devis", doc: data.document },
+      { key: "devis", label: "Devis", doc: data.devis },
       { key: "bdc", label: "BDC", doc: data.bdc },
       { key: "bl", label: "BL", doc: data.bl },
       { key: "attachement", label: "Attachement", doc: data.attachement },
@@ -168,9 +169,25 @@ export const Traceability = () => {
             const hasDoc =
               step.doc &&
               (Array.isArray(step.doc) ? step.doc.length > 0 : true);
+
+            // Cas particulier "Paiements" : le statut de l'étape doit
+            // refléter si le total encaissé correspond au montant de la
+            // facture, pas le statut d'un paiement individuel.
+            const factureAmount = data.facture?.amount || 0;
+            const totalPaid = Array.isArray(data.paiements)
+              ? data.paiements.reduce((sum, p) => sum + (p.amount || 0), 0)
+              : 0;
+            const isFullyPaid =
+              data.facture != null &&
+              Array.isArray(data.paiements) &&
+              data.paiements.length > 0 &&
+              Math.abs(totalPaid - factureAmount) < 0.01;
+
             const status = hasDoc
               ? Array.isArray(step.doc)
-                ? step.doc[0]?.status
+                ? isFullyPaid
+                  ? "validated"
+                  : "pending"
                 : step.doc?.status
               : null;
             const isHighlight =
@@ -200,17 +217,48 @@ export const Traceability = () => {
                       : {},
                   }}
                   onClick={() => {
-                    if (hasDoc && step.doc) {
-                      const doc = step.doc;
+                    if (!hasDoc || !step.doc) return;
+
+                    // "Paiements" est un tableau : on affiche le détail de
+                    // chaque paiement + le total encaissé vs le montant de
+                    // la facture, pour garder la traçabilité même si
+                    // l'étape n'est pas encore validée.
+                    if (Array.isArray(step.doc)) {
+                      const lines = step.doc.map(
+                        (p, idx) =>
+                          `  ${idx + 1}. ${p.reference || "N/A"} – ${
+                            p.amount ? `${p.amount.toLocaleString()} DT` : "N/A"
+                          } (${p.mode || "N/A"}) le ${
+                            p.date
+                              ? new Date(p.date).toLocaleDateString("fr-FR")
+                              : "N/A"
+                          }`,
+                      );
+                      const solde = factureAmount - totalPaid;
                       alert(
                         `📄 ${step.label}\n\n` +
-                          `Numéro: ${doc.number || doc.reference || "N/A"}\n` +
-                          `Statut: ${getStatusLabel(doc.status)}\n` +
-                          `Montant: ${doc.amount ? `${doc.amount.toLocaleString()} DT` : "N/A"}\n` +
-                          `Date: ${doc.date ? new Date(doc.date).toLocaleDateString("fr-FR") : "N/A"}\n` +
-                          `Description: ${doc.description || "Aucune"}`,
+                          `${step.doc.length} paiement(s) enregistré(s) :\n${lines.join("\n")}\n\n` +
+                          `Total encaissé: ${totalPaid.toLocaleString()} DT\n` +
+                          `Montant facture: ${factureAmount.toLocaleString()} DT\n` +
+                          `Solde restant: ${solde.toLocaleString()} DT\n` +
+                          `Statut de l'étape: ${
+                            isFullyPaid
+                              ? "Validé / Terminé"
+                              : "En attente (montant incomplet)"
+                          }`,
                       );
+                      return;
                     }
+
+                    const doc = step.doc;
+                    alert(
+                      `📄 ${step.label}\n\n` +
+                        `Numéro: ${doc.number || doc.reference || "N/A"}\n` +
+                        `Statut: ${getStatusLabel(doc.status)}\n` +
+                        `Montant: ${doc.amount ? `${doc.amount.toLocaleString()} DT` : "N/A"}\n` +
+                        `Date: ${doc.date ? new Date(doc.date).toLocaleDateString("fr-FR") : "N/A"}\n` +
+                        `Description: ${doc.description || "Aucune"}`,
+                    );
                   }}
                 >
                   {hasDoc ? (
