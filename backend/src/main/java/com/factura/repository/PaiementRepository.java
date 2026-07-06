@@ -9,5 +9,6 @@ import java.util.UUID;
 @Repository
 public interface PaiementRepository extends JpaRepository<Paiement, UUID> {
     Paiement findByReference(String reference);
+    List<Paiement> findByFactureNumber(String factureNumber);
     List<Paiement> findByFactureId(UUID factureId);  // <-- AJOUTER CETTE MÉTHODE
 }
