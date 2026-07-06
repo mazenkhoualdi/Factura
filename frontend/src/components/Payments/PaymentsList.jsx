@@ -118,7 +118,7 @@ export const PaymentsList = () => {
   const filteredPayments = payments.filter(
     (d) =>
       d.reference?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      d.invoiceNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      d.factureNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       d.comments?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
@@ -133,9 +133,13 @@ export const PaymentsList = () => {
 
     setAddLoading(true);
     try {
+      const selectedInvoice = invoices.find(
+        (d) => d.id === newPayment.invoiceId,
+      );
       const data = {
         ...newPayment,
         amount: parseFloat(newPayment.amount) || 0,
+        factureNumber: selectedInvoice?.number || "", // ← AJOUT CRUCIAL
       };
       const response = await api.post("/paiements", data);
 
@@ -196,9 +200,13 @@ export const PaymentsList = () => {
 
     setEditLoading(true);
     try {
+      const selectedInvoice = invoices.find(
+        (d) => d.id === editFormData.invoiceId,
+      );
       const data = {
         ...editFormData,
         amount: parseFloat(editFormData.amount) || 0,
+        factureNumber: selectedInvoice?.number || "", // ← AJOUT CRUCIAL
       };
       await api.put(`/paiements/${editingPayment.id}`, data);
 
@@ -387,7 +395,7 @@ export const PaymentsList = () => {
                   <TableRow key={d.id} hover>
                     <TableCell>{d.reference}</TableCell>
                     <TableCell>
-                      {d.invoiceNumber || d.facture?.number}
+                      {d.factureNumber || d.facture?.number}
                     </TableCell>
                     <TableCell>
                       {d.date
@@ -806,7 +814,7 @@ export const PaymentsList = () => {
                     Facture associée
                   </Typography>
                   <Typography>
-                    {selectedPayment.invoiceNumber ||
+                    {selectedPayment.factureNumber ||
                       selectedPayment.facture?.number}
                   </Typography>
                 </Grid>
