@@ -1,5 +1,6 @@
 package com.factura.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
@@ -19,6 +20,7 @@ public class BDC {
     @Column(unique = true, nullable = false)
     private String number;
 
+    @JsonBackReference
     @OneToOne
     @JoinColumn(name = "devis_id", unique = true)
     private Devis devis;
