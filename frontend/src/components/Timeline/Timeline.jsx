@@ -86,18 +86,43 @@ export const Timeline = () => {
   } = useAppContext();
 
   // Construire les transactions à partir des données
+  // IMPORTANT : les documents ne sont PAS reliés par de vrais champs d'id
+  // (bdc.devisId, bl.bdcId, etc. n'existent pas côté API). Le seul lien
+  // fiable est le numéro dénormalisé stocké sur le document enfant
+  // (ex: bl.bdcNumber contient le "number" du BDC source).
   const transactions = devis.map((d) => {
-    const bdcItem = bdc.find((b) => b.devisId === d.id);
-    const blItem = bdcItem ? bl.find((b) => b.bdcId === bdcItem.id) : null;
+    const bdcItem = bdc.find((b) => b.devisNumber === d.number);
+    const blItem = bdcItem
+      ? bl.find((b) => b.bdcNumber === bdcItem.number)
+      : null;
     const attachement = blItem
-      ? attachements.find((a) => a.blId === blItem.id)
+      ? attachements.find((a) => a.blNumber === blItem.number)
       : null;
     const facture = attachement
-      ? factures.find((f) => f.attachementId === attachement.id)
+      ? factures.find((f) => f.attachmentNumber === attachement.number)
       : null;
     const paiementsList = facture
-      ? paiements.filter((p) => p.factureId === facture.id)
+      ? paiements.filter((p) => p.factureNumber === facture.number)
       : [];
+
+    // Montant total encaissé vs montant de la facture (tolérance d'arrondi)
+    const totalPaid = paiementsList.reduce(
+      (sum, p) => sum + (p.amount || 0),
+      0,
+    );
+    const factureAmount = facture?.amount || 0;
+    const isFullyPaid =
+      facture != null &&
+      paiementsList.length > 0 &&
+      Math.abs(totalPaid - factureAmount) < 0.01;
+    // L'étape "paiements" n'est validée que si le montant encaissé correspond
+    // exactement au montant de la facture. Sinon, malgré des paiements déjà
+    // enregistrés (traçabilité conservée), elle reste "en attente".
+    const paiementsStepStatus = facture
+      ? isFullyPaid
+        ? "validated"
+        : "pending"
+      : null;
 
     return {
       id: d.id,
@@ -108,8 +133,12 @@ export const Timeline = () => {
       attachement: attachement,
       facture: facture,
       paiements: paiementsList,
+      totalPaid,
+      factureAmount,
+      isFullyPaid,
+      paiementsStepStatus,
       status:
-        facture && paiementsList.length > 0
+        isFullyPaid
           ? "completed"
           : attachement?.status === "validated"
             ? "in_progress"
@@ -126,8 +155,39 @@ export const Timeline = () => {
       ? transactions
       : transactions.filter((trx) => trx.status === statusFilter);
 
-  const handleStepClick = (stepLabel, doc) => {
+  const handleStepClick = (stepLabel, doc, trx) => {
     if (!doc) return;
+
+    // Cas particulier de l'étape "Paiements" : doc est un tableau de
+    // paiements, pas un document unique. On affiche le détail de chaque
+    // paiement + le récapitulatif (total encaissé vs montant facturé)
+    // pour garder la traçabilité même si l'étape n'est pas encore validée.
+    if (Array.isArray(doc)) {
+      if (doc.length === 0) return;
+      const lines = doc.map(
+        (p, idx) =>
+          `  ${idx + 1}. ${p.reference || "N/A"} – ${
+            p.amount ? `${p.amount.toLocaleString()} €` : "N/A"
+          } (${p.mode || "N/A"}) le ${
+            p.date ? new Date(p.date).toLocaleDateString("fr-FR") : "N/A"
+          }`,
+      );
+      const total = trx?.totalPaid ?? 0;
+      const factureAmount = trx?.factureAmount ?? 0;
+      const solde = factureAmount - total;
+      alert(
+        `📄 ${stepLabel}\n\n` +
+          `${doc.length} paiement(s) enregistré(s) :\n${lines.join("\n")}\n\n` +
+          `Total encaissé: ${total.toLocaleString()} €\n` +
+          `Montant facture: ${factureAmount.toLocaleString()} €\n` +
+          `Solde restant: ${solde.toLocaleString()} €\n` +
+          `Statut de l'étape: ${
+            trx?.isFullyPaid ? "Validé / Terminé" : "En attente (montant incomplet)"
+          }`,
+      );
+      return;
+    }
+
     alert(
       `📄 ${stepLabel}\n\n` +
         `Numéro: ${doc.number || doc.reference || "N/A"}\n` +
@@ -244,9 +304,13 @@ export const Timeline = () => {
                     const hasDoc =
                       step.doc &&
                       (Array.isArray(step.doc) ? step.doc.length > 0 : true);
+                    // Pour l'étape "Paiements", le statut de l'étape ne doit
+                    // PAS être celui d'un paiement individuel, mais refléter
+                    // si le total encaissé correspond au montant de la
+                    // facture (traçabilité + validation réelle de l'étape).
                     const status = hasDoc
                       ? Array.isArray(step.doc)
-                        ? step.doc[0]?.status
+                        ? trx.paiementsStepStatus
                         : step.doc?.status
                       : null;
                     const statusColor = status
@@ -316,7 +380,9 @@ export const Timeline = () => {
                                   <Chip
                                     label={
                                       Array.isArray(step.doc)
-                                        ? `${step.doc.length} paiement(s)`
+                                        ? trx.isFullyPaid
+                                          ? "✅ Validé / Terminé"
+                                          : `⏳ En attente (${trx.totalPaid.toLocaleString()} € / ${trx.factureAmount.toLocaleString()} €)`
                                         : getStatusLabel(status)
                                     }
                                     size="small"
@@ -389,7 +455,7 @@ export const Timeline = () => {
                               size="small"
                               sx={{ mt: 0.5 }}
                               onClick={() =>
-                                handleStepClick(step.label, step.doc)
+                                handleStepClick(step.label, step.doc, trx)
                               }
                               disabled={!hasDoc}
                             >
