@@ -9,5 +9,6 @@ import java.util.UUID;
 @Repository
 public interface BlRepository extends JpaRepository<BL, UUID> {
     BL findByNumber(String number);
+    BL findByBdcNumber(String bdcNumber);
     Optional<BL> findByBdcId(UUID bdcId);  // <-- AJOUTER CETTE MÉTHODE
 }
