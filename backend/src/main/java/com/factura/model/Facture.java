@@ -29,11 +29,23 @@ public class Facture {
     @Column(name = "attachment_number")
     private String attachmentNumber;
 
+    // Référence à la facture d'achat liée
+    // permettant de calculer le gain = montant facture vente - montant facture achat
+    @ManyToOne
+    @JoinColumn(name = "facture_achat_id")
+    private FactureAchat factureAchat;
+
+    @Column(name = "facture_achat_number")
+    private String factureAchatNumber;
+
     @Temporal(TemporalType.DATE)
     private Date date;
 
     private String description;
     private Double amount;
+
+    // Gain = montant de cette facture de vente - montant de la facture d'achat liée
+    private Double gain;
 
     @Enumerated(EnumType.STRING)
     private FactureStatus status;
