@@ -1,11 +1,13 @@
 package com.factura.controller;
 
 import com.factura.model.Facture;
-import com.factura.repository.FactureRepository;
+import com.factura.service.FactureService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -13,41 +15,43 @@ import java.util.UUID;
 @CrossOrigin(origins = "http://localhost:5173")
 @RequiredArgsConstructor
 public class FactureController {
-    private final FactureRepository factureRepository;
+    private final FactureService factureService;
 
     @GetMapping
     public List<Facture> getAllFactures() {
-        return factureRepository.findAll();
+        return factureService.getAllFactures();
+    }
+
+    @GetMapping("/gain-total")
+    public Map<String, Double> getGainTotal() {
+        return Map.of("gainTotal", factureService.getGainTotal());
     }
 
     @GetMapping("/{id}")
-    public Facture getFactureById(@PathVariable UUID id) {
-        return factureRepository.findById(id).orElse(null);
+    public ResponseEntity<Facture> getFactureById(@PathVariable UUID id) {
+        return factureService.getFactureById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
     public Facture createFacture(@RequestBody Facture facture) {
-        return factureRepository.save(facture);
+        return factureService.createFacture(facture);
     }
 
     @PutMapping("/{id}")
-    public Facture updateFacture(@PathVariable UUID id, @RequestBody Facture factureDetails) {
-        return factureRepository.findById(id)
-                .map(facture -> {
-                    facture.setNumber(factureDetails.getNumber());
-                    facture.setAttachement(factureDetails.getAttachement());
-                    facture.setDate(factureDetails.getDate());
-                    facture.setDescription(factureDetails.getDescription());
-                    facture.setAmount(factureDetails.getAmount());
-                    facture.setStatus(factureDetails.getStatus());
-                    facture.setComments(factureDetails.getComments());
-                    return factureRepository.save(facture);
-                })
-                .orElse(null);
+    public ResponseEntity<Facture> updateFacture(@PathVariable UUID id, @RequestBody Facture factureDetails) {
+        try {
+            Facture updated = factureService.updateFacture(id, factureDetails);
+            return ResponseEntity.ok(updated);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @DeleteMapping("/{id}")
-    public void deleteFacture(@PathVariable UUID id) {
-        factureRepository.deleteById(id);
+    public ResponseEntity<Void> deleteFacture(@PathVariable UUID id) {
+        factureService.deleteFacture(id);
+        return ResponseEntity.noContent().build();
     }
 }
