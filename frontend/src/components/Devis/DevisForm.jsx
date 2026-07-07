@@ -52,7 +52,7 @@ export const DevisForm = ({ open, devis, onClose, onSuccess }) => {
       });
     } else {
       setFormData({
-        number: `DEV-${String(Date.now()).slice(-4)}`,
+        number: "",
         clientId: "",
         date: new Date().toISOString().split("T")[0],
         expirationDate: new Date(Date.now() + 30 * 86400000)
@@ -110,8 +110,11 @@ export const DevisForm = ({ open, devis, onClose, onSuccess }) => {
               label="Numéro"
               name="number"
               fullWidth
+              required
+              placeholder="Ex: DEV-0001"
               value={formData.number}
-              disabled
+              onChange={handleChange}
+              disabled={!!devis}
             />
           </Grid>
           <Grid item xs={12} sm={6}>
@@ -186,7 +189,6 @@ export const DevisForm = ({ open, devis, onClose, onSuccess }) => {
                 <MenuItem value="pending">En attente</MenuItem>
                 <MenuItem value="accepted">Accepté</MenuItem>
                 <MenuItem value="refused">Refusé</MenuItem>
-                <MenuItem value="validated">Validé</MenuItem>
               </Select>
             </FormControl>
           </Grid>
