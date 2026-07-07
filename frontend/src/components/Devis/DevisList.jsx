@@ -41,7 +41,6 @@ const getStatusLabel = (status) => {
     pending: "En attente",
     accepted: "Accepté",
     refused: "Refusé",
-    validated: "Validé",
   };
   return map[status] || status;
 };
@@ -380,7 +379,7 @@ export const DevisList = () => {
   // ============================================================
   const handleOpenCreate = () => {
     setNewDevis({
-      number: `DEV-${String(devis.length + 1).padStart(4, "0")}`,
+      number: "",
       clientId: "",
       societyId: "",
       date: new Date().toISOString().split("T")[0],
@@ -573,8 +572,12 @@ export const DevisList = () => {
               <TextField
                 label="Numéro"
                 fullWidth
+                required
+                placeholder="Ex: DEV-0001"
                 value={newDevis.number}
-                disabled
+                onChange={(e) =>
+                  setNewDevis({ ...newDevis, number: e.target.value })
+                }
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -687,7 +690,6 @@ export const DevisList = () => {
                   <MenuItem value="pending">En attente</MenuItem>
                   <MenuItem value="accepted">Accepté</MenuItem>
                   <MenuItem value="refused">Refusé</MenuItem>
-                  <MenuItem value="validated">Validé</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -883,7 +885,6 @@ export const DevisList = () => {
                   <MenuItem value="pending">En attente</MenuItem>
                   <MenuItem value="accepted">Accepté</MenuItem>
                   <MenuItem value="refused">Refusé</MenuItem>
-                  <MenuItem value="validated">Validé</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
