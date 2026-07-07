@@ -261,7 +261,9 @@ export const Traceability = () => {
                     );
                   }}
                 >
-                  {hasDoc ? (
+                  {step.key === "client" ? (
+                    <PeopleIcon color={hasDoc ? "primary" : "disabled"} />
+                  ) : hasDoc ? (
                     getStatusIcon(status)
                   ) : (
                     <CircleIcon sx={{ color: "#e0e0e0" }} />
