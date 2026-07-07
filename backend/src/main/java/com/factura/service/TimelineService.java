@@ -56,7 +56,24 @@ public class TimelineService {
             String status = "blocked";
             Facture facture = (Facture) transaction.get("facture");
             List<Paiement> paiements = (List<Paiement>) transaction.get("paiements");
+
+            // Montant total encaissé vs montant de la facture. L'étape
+            // paiement (et donc la transaction) n'est "completed" que si le
+            // total des encaissements correspond réellement au montant de
+            // la facture. Sinon, même avec des paiements déjà enregistrés
+            // (conservés pour la traçabilité), le statut reste "in_progress".
+            boolean isFullyPaid = false;
             if (facture != null && paiements != null && !paiements.isEmpty()) {
+                double totalPaid = paiements.stream()
+                        .mapToDouble(p -> p.getAmount() != null ? p.getAmount() : 0.0)
+                        .sum();
+                double factureAmount = facture.getAmount() != null ? facture.getAmount() : 0.0;
+                isFullyPaid = Math.abs(totalPaid - factureAmount) < 0.01;
+                transaction.put("totalPaid", totalPaid);
+                transaction.put("isFullyPaid", isFullyPaid);
+            }
+
+            if (isFullyPaid) {
                 status = "completed";
             } else if (facture != null) {
                 status = "in_progress";
