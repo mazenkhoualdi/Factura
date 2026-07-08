@@ -72,6 +72,8 @@ export const FactureAchatList = () => {
   const [invoices, setInvoices] = useState([]);
   const [devisAchats, setDevisAchats] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [dateDebut, setDateDebut] = useState("");
+  const [dateFin, setDateFin] = useState("");
   const [loading, setLoading] = useState(false);
 
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -118,12 +120,16 @@ export const FactureAchatList = () => {
     loadDevisAchats();
   }, []);
 
-  const filteredInvoices = invoices.filter(
-    (d) =>
+  const filteredInvoices = invoices.filter((d) => {
+    const matchesSearch =
       d.number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       d.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      d.devisAchatNumber?.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+      d.devisAchatNumber?.toLowerCase().includes(searchTerm.toLowerCase());
+    const dOnly = d.date ? String(d.date).slice(0, 10) : null;
+    const matchesDateDebut = !dateDebut || (dOnly && dOnly >= dateDebut);
+    const matchesDateFin = !dateFin || (dOnly && dOnly <= dateFin);
+    return matchesSearch && matchesDateDebut && matchesDateFin;
+  });
 
   const buildPayload = (form) => {
     const devisAchat = devisAchats.find((d) => d.id === form.devisAchatId);
@@ -305,6 +311,24 @@ export const FactureAchatList = () => {
                 <SearchIcon sx={{ mr: 1, color: "text.secondary" }} />
               ),
             }}
+          />
+          <TextField
+            size="small"
+            type="date"
+            label="Du"
+            value={dateDebut}
+            onChange={(e) => setDateDebut(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            sx={{ width: 160 }}
+          />
+          <TextField
+            size="small"
+            type="date"
+            label="Au"
+            value={dateFin}
+            onChange={(e) => setDateFin(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            sx={{ width: 160 }}
           />
           <Button
             variant="contained"
