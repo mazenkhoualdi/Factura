@@ -41,6 +41,7 @@ const getStatusLabel = (status) => {
     pending: "En attente",
     accepted: "Accepté",
     refused: "Refusé",
+    validated: "Validé",
   };
   return map[status] || status;
 };
@@ -59,6 +60,8 @@ export const DevisList = () => {
   const { clients, societies, loadClients } = useAppContext();
   const [devis, setDevis] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [dateDebut, setDateDebut] = useState("");
+  const [dateFin, setDateFin] = useState("");
   const [loading, setLoading] = useState(false);
 
   // États pour l'ajout
@@ -122,12 +125,16 @@ export const DevisList = () => {
     loadClients();
   }, []);
 
-  const filteredDevis = devis.filter(
-    (d) =>
+  const filteredDevis = devis.filter((d) => {
+    const matchesSearch =
       d.number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       d.clientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      d.description?.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+      d.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    const dOnly = d.date ? String(d.date).slice(0, 10) : null;
+    const matchesDateDebut = !dateDebut || (dOnly && dOnly >= dateDebut);
+    const matchesDateFin = !dateFin || (dOnly && dOnly <= dateFin);
+    return matchesSearch && matchesDateDebut && matchesDateFin;
+  });
 
   // ============================================================
   // AJOUTER UN DEVIS
@@ -426,6 +433,24 @@ export const DevisList = () => {
               ),
             }}
           />
+          <TextField
+            size="small"
+            type="date"
+            label="Du"
+            value={dateDebut}
+            onChange={(e) => setDateDebut(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            sx={{ width: 160 }}
+          />
+          <TextField
+            size="small"
+            type="date"
+            label="Au"
+            value={dateFin}
+            onChange={(e) => setDateFin(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            sx={{ width: 160 }}
+          />
           <Button
             variant="contained"
             startIcon={<AddIcon />}
@@ -690,6 +715,7 @@ export const DevisList = () => {
                   <MenuItem value="pending">En attente</MenuItem>
                   <MenuItem value="accepted">Accepté</MenuItem>
                   <MenuItem value="refused">Refusé</MenuItem>
+                  <MenuItem value="validated">Validé</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -885,6 +911,7 @@ export const DevisList = () => {
                   <MenuItem value="pending">En attente</MenuItem>
                   <MenuItem value="accepted">Accepté</MenuItem>
                   <MenuItem value="refused">Refusé</MenuItem>
+                  <MenuItem value="validated">Validé</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
