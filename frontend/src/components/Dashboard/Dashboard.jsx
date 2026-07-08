@@ -16,8 +16,13 @@ import {
   CircularProgress,
   useTheme,
   alpha,
+  TextField,
+  IconButton,
+  Button,
+  Tooltip,
 } from "@mui/material";
 import { useAppContext } from "../../context/AppContext";
+import { getGainAchatsObjectif, setGainAchatsObjectif } from "../../api/api";
 import PeopleIcon from "@mui/icons-material/People";
 import DescriptionIcon from "@mui/icons-material/Description";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
@@ -25,6 +30,11 @@ import PendingIcon from "@mui/icons-material/Pending";
 import EuroIcon from "@mui/icons-material/Euro";
 import PaymentsIcon from "@mui/icons-material/Payments";
 import MoneyOffIcon from "@mui/icons-material/MoneyOff";
+import SavingsIcon from "@mui/icons-material/Savings";
+import EditRoundedIcon from "@mui/icons-material/EditRounded";
+import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+import TrackChangesRoundedIcon from "@mui/icons-material/TrackChangesRounded";
 import {
   BarChart,
   Bar,
@@ -111,6 +121,282 @@ const KpiCard = ({ label, value, icon, color }) => {
   );
 };
 
+// Carte "Objectif de gain total achats" (même esprit que la jauge Taux d'encaissement)
+// L'objectif est persisté côté backend (table `objectifs`, clé GAIN_ACHATS) — pas de localStorage.
+const GainObjectifCard = ({ totalGainAchats }) => {
+  const theme = useTheme();
+
+  // null = pas encore chargé / pas encore défini. Aucune valeur par défaut n'est appliquée :
+  // tant que l'utilisateur n'a rien saisi côté serveur, l'objectif reste null.
+  const [objectif, setObjectif] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+  const [editing, setEditing] = React.useState(false);
+  const [inputValue, setInputValue] = React.useState("");
+  const [error, setError] = React.useState("");
+  const [saving, setSaving] = React.useState(false);
+
+  // Chargement initial depuis le backend
+  React.useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const res = await getGainAchatsObjectif();
+        if (!active) return;
+        // 204 No Content => pas encore d'objectif défini
+        if (res.status === 204 || !res.data) {
+          setObjectif(null);
+          setEditing(true);
+        } else {
+          setObjectif(res.data.montant);
+        }
+      } catch (err) {
+        if (!active) return;
+        console.error("Erreur chargement de l'objectif gain achats :", err);
+        setError("Impossible de contacter le serveur");
+        setEditing(true);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const handleStartEdit = () => {
+    setInputValue(objectif !== null ? String(objectif) : "");
+    setError("");
+    setEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    // On ne peut annuler que si un objectif existe déjà
+    if (objectif !== null) {
+      setError("");
+      setEditing(false);
+    }
+  };
+
+  const handleSaveObjectif = async () => {
+    const val = parseFloat(String(inputValue).replace(",", "."));
+    if (isNaN(val) || val <= 0) {
+      setError("Veuillez saisir un montant valide (> 0)");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      const res = await setGainAchatsObjectif(val);
+      setObjectif(res.data.montant);
+      setEditing(false);
+    } catch (err) {
+      console.error("Erreur sauvegarde de l'objectif gain achats :", err);
+      setError("Échec de l'enregistrement sur le serveur");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Card sx={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 4 }}>
+        <CardContent sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <CircularProgress size={24} sx={{ color: "#7b1fa2" }} />
+          <Typography color="text.secondary">Chargement de l'objectif…</Typography>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const percentage =
+    objectif && objectif > 0
+      ? Math.round((totalGainAchats / objectif) * 100)
+      : 0;
+
+  const progressColor =
+    percentage >= 80 ? "#2e7d32" : percentage >= 50 ? "#ed6c02" : "#7b1fa2";
+
+  return (
+    <Card
+      sx={{
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        borderRadius: 4,
+        border: `2px solid #7b1fa225`,
+        background: `linear-gradient(135deg, #7b1fa205, ${theme.palette.background.paper})`,
+        boxShadow: `0 4px 20px #7b1fa215`,
+        transition: "all 0.3s ease",
+        position: "relative",
+        "&:hover": {
+          transform: "translateY(-4px)",
+          boxShadow: `0 8px 30px #7b1fa225`,
+        },
+      }}
+    >
+      <CardContent>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 1,
+            mb: 2,
+            background: "#7b1fa208",
+            px: 2,
+            py: 1,
+            borderRadius: 50,
+            border: "1px solid #7b1fa220",
+            width: "fit-content",
+            mx: "auto",
+          }}
+        >
+          <TrackChangesRoundedIcon sx={{ color: "#7b1fa2" }} />
+          <Typography variant="h6" fontWeight={700} sx={{ color: "#7b1fa2" }}>
+            Objectif gain achats
+          </Typography>
+        </Box>
+
+        {!editing && (
+          <Tooltip title="Modifier l'objectif">
+            <IconButton
+              size="small"
+              onClick={handleStartEdit}
+              sx={{ position: "absolute", top: 12, right: 12, color: "#7b1fa2" }}
+            >
+              <EditRoundedIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
+
+        {editing ? (
+          <Box sx={{ px: 1 }}>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              align="center"
+              sx={{ mb: 2 }}
+            >
+              Définissez votre objectif de gain total sur les achats (en DT)
+            </Typography>
+            <TextField
+              size="small"
+              fullWidth
+              type="number"
+              autoFocus
+              placeholder="Ex: 2000"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSaveObjectif();
+              }}
+              error={!!error}
+              helperText={error || " "}
+              inputProps={{ min: 0, step: "0.01" }}
+            />
+            <Box sx={{ display: "flex", gap: 1, justifyContent: "center", mt: 1 }}>
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={
+                  saving ? (
+                    <CircularProgress size={14} sx={{ color: "#fff" }} />
+                  ) : (
+                    <CheckRoundedIcon />
+                  )
+                }
+                onClick={handleSaveObjectif}
+                disabled={saving}
+                sx={{ bgcolor: "#7b1fa2", "&:hover": { bgcolor: "#6a1b9a" } }}
+              >
+                Valider
+              </Button>
+              {objectif !== null && (
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<CloseRoundedIcon />}
+                  onClick={handleCancelEdit}
+                  disabled={saving}
+                  sx={{ color: "#7b1fa2", borderColor: "#7b1fa2" }}
+                >
+                  Annuler
+                </Button>
+              )}
+            </Box>
+          </Box>
+        ) : (
+          <>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              align="center"
+              sx={{
+                mb: 3,
+                lineHeight: 1.7,
+                background: `${theme.palette.grey[100]}60`,
+                p: 1.5,
+                borderRadius: 2,
+              }}
+            >
+              <strong>{totalGainAchats.toFixed(2)} DT</strong> réalisés sur
+              l'objectif de{" "}
+              <strong>{objectif.toFixed(2)} DT</strong>
+            </Typography>
+
+            <Typography
+              variant="h2"
+              fontWeight={800}
+              align="center"
+              sx={{
+                color: progressColor,
+                mb: 2,
+                textShadow: `0 2px 8px ${progressColor}30`,
+              }}
+            >
+              {percentage}%
+            </Typography>
+
+            <CustomLinearProgress
+              variant="determinate"
+              value={Math.min(Math.max(percentage, 0), 100)}
+              sx={{ height: 12, borderRadius: 6, mb: 1 }}
+            />
+
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                mt: 2,
+                pt: 2,
+                borderTop: `1px solid ${theme.palette.divider}`,
+              }}
+            >
+              <Box>
+                <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                  Gain réalisé
+                </Typography>
+                <Typography fontWeight={700} sx={{ color: "#7b1fa2" }}>
+                  {totalGainAchats.toFixed(2)} DT
+                </Typography>
+              </Box>
+              <Box sx={{ textAlign: "right" }}>
+                <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                  Objectif
+                </Typography>
+                <Typography fontWeight={700} color="primary">
+                  {objectif.toFixed(2)} DT
+                </Typography>
+              </Box>
+            </Box>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
 export const Dashboard = () => {
   const theme = useTheme();
   const { clients, devis, factures, paiements, loading } = useAppContext();
@@ -124,6 +410,10 @@ export const Dashboard = () => {
   const totalFactured = safeFactures.reduce((sum, f) => sum + (f.amount || 0), 0);
   const totalPaid = safePaiements.reduce((sum, p) => sum + (p.amount || 0), 0);
   const totalRemaining = totalFactured - totalPaid;
+  const totalGainAchats = safeFactures.reduce(
+    (sum, f) => sum + (f.gain || 0),
+    0,
+  );
 
   const encaissementPercentage =
     totalFactured > 0 ? Math.round((totalPaid / totalFactured) * 100) : 0;
@@ -245,7 +535,7 @@ export const Dashboard = () => {
 
       {/* KPIs - Correction des props */}
       <Grid container spacing={3}>
-        <Grid item xs={12} md={8}>
+        <Grid item xs={12} md={6}>
           <Box
             sx={{
               display: "flex",
@@ -309,118 +599,126 @@ export const Dashboard = () => {
           </Box>
           <Grid container spacing={3}>
             {financialKpis.map((kpi, index) => (
-              <Grid item xs={12} sm={4} key={`financial-${index}`}>
+              <Grid item xs={12} sm={6} md={3} key={`financial-${index}`}>
                 <KpiCard {...kpi} />
               </Grid>
             ))}
           </Grid>
         </Grid>
 
-        {/* Jauge */}
-        <Grid item xs={12} md={4}>
-          <Card
-            sx={{
-              height: "100%",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              borderRadius: 4,
-              border: `2px solid ${theme.palette.success.main}25`,
-              background: `linear-gradient(135deg, ${theme.palette.success.main}05, ${theme.palette.background.paper})`,
-              boxShadow: `0 4px 20px ${theme.palette.success.main}15`,
-              transition: "all 0.3s ease",
-              "&:hover": {
-                transform: "translateY(-4px)",
-                boxShadow: `0 8px 30px ${theme.palette.success.main}25`,
-              },
-            }}
-          >
-            <CardContent>
-              <Box
+        {/* Jauges : Taux d'encaissement + Objectif gain achats, côte à côte */}
+        <Grid item xs={12} md={6}>
+          <Grid container spacing={3} sx={{ height: "100%" }}>
+            <Grid item xs={12} sm={6}>
+              <Card
                 sx={{
+                  height: "100%",
                   display: "flex",
-                  alignItems: "center",
+                  flexDirection: "column",
                   justifyContent: "center",
-                  gap: 1,
-                  mb: 2,
-                  background: `${theme.palette.success.main}08`,
-                  px: 2,
-                  py: 1,
-                  borderRadius: 50,
-                  border: `1px solid ${theme.palette.success.main}20`,
-                  width: "fit-content",
-                  mx: "auto",
+                  borderRadius: 4,
+                  border: `2px solid ${theme.palette.success.main}25`,
+                  background: `linear-gradient(135deg, ${theme.palette.success.main}05, ${theme.palette.background.paper})`,
+                  boxShadow: `0 4px 20px ${theme.palette.success.main}15`,
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    transform: "translateY(-4px)",
+                    boxShadow: `0 8px 30px ${theme.palette.success.main}25`,
+                  },
                 }}
               >
-                <TrendingUpRoundedIcon color="success" />
-                <Typography variant="h6" fontWeight={700} color="success.main">
-                  Taux d'encaissement
-                </Typography>
-              </Box>
+                <CardContent>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 1,
+                      mb: 2,
+                      background: `${theme.palette.success.main}08`,
+                      px: 2,
+                      py: 1,
+                      borderRadius: 50,
+                      border: `1px solid ${theme.palette.success.main}20`,
+                      width: "fit-content",
+                      mx: "auto",
+                    }}
+                  >
+                    <TrendingUpRoundedIcon color="success" />
+                    <Typography variant="h6" fontWeight={700} color="success.main">
+                      Taux d'encaissement
+                    </Typography>
+                  </Box>
 
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                align="center"
-                sx={{
-                  mb: 3,
-                  lineHeight: 1.7,
-                  background: `${theme.palette.grey[100]}60`,
-                  p: 1.5,
-                  borderRadius: 2,
-                }}
-              >
-                <strong>{totalPaid.toFixed(2)} DT</strong> encaissés sur{" "}
-                <strong>{totalFactured.toFixed(2)} DT</strong> facturés
-              </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    align="center"
+                    sx={{
+                      mb: 3,
+                      lineHeight: 1.7,
+                      background: `${theme.palette.grey[100]}60`,
+                      p: 1.5,
+                      borderRadius: 2,
+                    }}
+                  >
+                    <strong>{totalPaid.toFixed(2)} DT</strong> encaissés sur{" "}
+                    <strong>{totalFactured.toFixed(2)} DT</strong> facturés
+                  </Typography>
 
-              <Typography
-                variant="h2"
-                fontWeight={800}
-                align="center"
-                sx={{
-                  color: progressColor,
-                  mb: 2,
-                  textShadow: `0 2px 8px ${progressColor}30`,
-                }}
-              >
-                {encaissementPercentage}%
-              </Typography>
+                  <Typography
+                    variant="h2"
+                    fontWeight={800}
+                    align="center"
+                    sx={{
+                      color: progressColor,
+                      mb: 2,
+                      textShadow: `0 2px 8px ${progressColor}30`,
+                    }}
+                  >
+                    {encaissementPercentage}%
+                  </Typography>
 
-              <CustomLinearProgress
-                variant="determinate"
-                value={Math.min(encaissementPercentage, 100)}
-                sx={{ height: 12, borderRadius: 6, mb: 1 }}
-              />
+                  <CustomLinearProgress
+                    variant="determinate"
+                    value={Math.min(encaissementPercentage, 100)}
+                    sx={{ height: 12, borderRadius: 6, mb: 1 }}
+                  />
 
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  mt: 2,
-                  pt: 2,
-                  borderTop: `1px solid ${theme.palette.divider}`,
-                }}
-              >
-                <Box>
-                  <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                    Encaissé
-                  </Typography>
-                  <Typography fontWeight={700} color="success.main">
-                    {totalPaid.toFixed(2)} DT
-                  </Typography>
-                </Box>
-                <Box sx={{ textAlign: "right" }}>
-                  <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                    Facturé
-                  </Typography>
-                  <Typography fontWeight={700} color="primary">
-                    {totalFactured.toFixed(2)} DT
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      mt: 2,
+                      pt: 2,
+                      borderTop: `1px solid ${theme.palette.divider}`,
+                    }}
+                  >
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                        Encaissé
+                      </Typography>
+                      <Typography fontWeight={700} color="success.main">
+                        {totalPaid.toFixed(2)} DT
+                      </Typography>
+                    </Box>
+                    <Box sx={{ textAlign: "right" }}>
+                      <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                        Facturé
+                      </Typography>
+                      <Typography fontWeight={700} color="primary">
+                        {totalFactured.toFixed(2)} DT
+                      </Typography>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <GainObjectifCard totalGainAchats={totalGainAchats} />
+            </Grid>
+          </Grid>
         </Grid>
       </Grid>
 
