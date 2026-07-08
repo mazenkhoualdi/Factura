@@ -313,7 +313,7 @@ export const PaymentsList = () => {
   // ============================================================
   const handleOpenCreate = () => {
     setNewPayment({
-      reference: `PAY-${String(payments.length + 1).padStart(4, "0")}`,
+      reference: "",
       invoiceId: "",
       date: new Date().toISOString().split("T")[0],
       amount: "",
@@ -479,8 +479,12 @@ export const PaymentsList = () => {
               <TextField
                 label="Référence"
                 fullWidth
+                required
+                placeholder="Ex: PAY-0001"
                 value={newPayment.reference}
-                disabled
+                onChange={(e) =>
+                  setNewPayment({ ...newPayment, reference: e.target.value })
+                }
               />
             </Grid>
             <Grid item xs={12} sm={6}>
