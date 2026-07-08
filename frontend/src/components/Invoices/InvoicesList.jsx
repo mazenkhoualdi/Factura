@@ -55,9 +55,15 @@ const getStatusColor = (status) => {
   return map[status] || "#9e9e9e";
 };
 
+const formatGain = (gain) => {
+  if (gain === null || gain === undefined) return "-";
+  return `${gain.toLocaleString()} DT`;
+};
+
 export const InvoicesList = () => {
   const [invoices, setInvoices] = useState([]);
   const [attachments, setAttachments] = useState([]);
+  const [facturesAchats, setFacturesAchats] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -66,6 +72,7 @@ export const InvoicesList = () => {
   const [newInvoice, setNewInvoice] = useState({
     number: "",
     attachmentId: "",
+    factureAchatId: "",
     date: "",
     description: "",
     amount: "",
@@ -81,6 +88,7 @@ export const InvoicesList = () => {
   const [editFormData, setEditFormData] = useState({
     number: "",
     attachmentId: "",
+    factureAchatId: "",
     date: "",
     description: "",
     amount: "",
@@ -120,9 +128,19 @@ export const InvoicesList = () => {
     }
   };
 
+  const loadFacturesAchats = async () => {
+    try {
+      const response = await api.get("/factures-achats");
+      setFacturesAchats(response.data || []);
+    } catch (error) {
+      console.error("Erreur chargement factures d'achat", error);
+    }
+  };
+
   useEffect(() => {
     loadInvoices();
     loadAttachments();
+    loadFacturesAchats();
   }, []);
 
   const filteredInvoices = invoices.filter(
@@ -146,10 +164,14 @@ export const InvoicesList = () => {
       const selectedAttachment = attachments.find(
         (d) => d.id === newInvoice.attachmentId,
       );
+      const selectedFactureAchat = facturesAchats.find(
+        (f) => f.id === newInvoice.factureAchatId,
+      );
       const data = {
         ...newInvoice,
         amount: parseFloat(newInvoice.amount) || 0,
         attachmentNumber: selectedAttachment?.number || "", // ← AJOUT CRUCIAL
+        factureAchat: selectedFactureAchat ? { id: selectedFactureAchat.id } : null,
       };
       const response = await api.post("/factures", data);
 
@@ -166,6 +188,7 @@ export const InvoicesList = () => {
       setNewInvoice({
         number: "",
         attachmentId: "",
+        factureAchatId: "",
         date: "",
         description: "",
         amount: "",
@@ -191,6 +214,7 @@ export const InvoicesList = () => {
       number: invoiceItem.number || "",
       attachmentId:
         invoiceItem.attachmentId || invoiceItem.attachement?.id || "",
+      factureAchatId: invoiceItem.factureAchat?.id || "",
       date: invoiceItem.date
         ? new Date(invoiceItem.date).toISOString().split("T")[0]
         : "",
@@ -214,10 +238,14 @@ export const InvoicesList = () => {
       const selectedAttachment = attachments.find(
         (d) => d.id === editFormData.attachmentId,
       );
+      const selectedFactureAchat = facturesAchats.find(
+        (f) => f.id === editFormData.factureAchatId,
+      );
       const data = {
         ...editFormData,
         amount: parseFloat(editFormData.amount) || 0,
         attachmentNumber: selectedAttachment?.number || "", // ← AJOUT CRUCIAL
+        factureAchat: selectedFactureAchat ? { id: selectedFactureAchat.id } : null,
       };
       await api.put(`/factures/${editingInvoice.id}`, data);
 
@@ -324,8 +352,9 @@ export const InvoicesList = () => {
   // ============================================================
   const handleOpenCreate = () => {
     setNewInvoice({
-      number: `FAC-${String(invoices.length + 1).padStart(4, "0")}`,
+      number: "",
       attachmentId: "",
+      factureAchatId: "",
       date: new Date().toISOString().split("T")[0],
       description: "",
       amount: "",
@@ -386,9 +415,11 @@ export const InvoicesList = () => {
               <TableRow>
                 <TableCell>Numéro</TableCell>
                 <TableCell>Attachement source</TableCell>
+                <TableCell>Facture d'achat</TableCell>
                 <TableCell>Date</TableCell>
                 <TableCell>Description</TableCell>
                 <TableCell>Montant</TableCell>
+                <TableCell>Gain</TableCell>
                 <TableCell>Statut</TableCell>
                 <TableCell align="right">Actions</TableCell>
               </TableRow>
@@ -396,7 +427,7 @@ export const InvoicesList = () => {
             <TableBody>
               {filteredInvoices.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} align="center">
+                  <TableCell colSpan={9} align="center">
                     <Typography color="text.secondary">
                       Aucune facture trouvée.
                     </Typography>
@@ -410,6 +441,9 @@ export const InvoicesList = () => {
                       {d.attachmentNumber || d.attachement?.number}
                     </TableCell>
                     <TableCell>
+                      {d.factureAchatNumber || d.factureAchat?.number || "-"}
+                    </TableCell>
+                    <TableCell>
                       {d.date
                         ? new Date(d.date).toLocaleDateString("fr-FR")
                         : ""}
@@ -417,6 +451,20 @@ export const InvoicesList = () => {
                     <TableCell>{d.description}</TableCell>
                     <TableCell>
                       {d.amount ? `${d.amount.toLocaleString()} DT` : ""}
+                    </TableCell>
+                    <TableCell>
+                      <Typography
+                        fontWeight={700}
+                        color={
+                          d.gain > 0
+                            ? "success.main"
+                            : d.gain < 0
+                              ? "error.main"
+                              : "text.secondary"
+                        }
+                      >
+                        {formatGain(d.gain)}
+                      </Typography>
                     </TableCell>
                     <TableCell>
                       <Chip
@@ -496,8 +544,12 @@ export const InvoicesList = () => {
               <TextField
                 label="Numéro"
                 fullWidth
+                required
+                placeholder="Ex: FAC-0001"
                 value={newInvoice.number}
-                disabled
+                onChange={(e) =>
+                  setNewInvoice({ ...newInvoice, number: e.target.value })
+                }
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -520,6 +572,30 @@ export const InvoicesList = () => {
                   {attachments.map((d) => (
                     <MenuItem key={d.id} value={d.id}>
                       {d.number}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Facture d'achat</InputLabel>
+                <Select
+                  value={newInvoice.factureAchatId}
+                  onChange={(e) =>
+                    setNewInvoice({
+                      ...newInvoice,
+                      factureAchatId: e.target.value,
+                    })
+                  }
+                  label="Facture d'achat"
+                >
+                  <MenuItem value="">
+                    <em>Aucune</em>
+                  </MenuItem>
+                  {facturesAchats.map((f) => (
+                    <MenuItem key={f.id} value={f.id}>
+                      {f.number} — {f.amount?.toLocaleString()} DT
                     </MenuItem>
                   ))}
                 </Select>
@@ -663,6 +739,30 @@ export const InvoicesList = () => {
                   {attachments.map((d) => (
                     <MenuItem key={d.id} value={d.id}>
                       {d.number}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Facture d'achat</InputLabel>
+                <Select
+                  value={editFormData.factureAchatId}
+                  onChange={(e) =>
+                    setEditFormData({
+                      ...editFormData,
+                      factureAchatId: e.target.value,
+                    })
+                  }
+                  label="Facture d'achat"
+                >
+                  <MenuItem value="">
+                    <em>Aucune</em>
+                  </MenuItem>
+                  {facturesAchats.map((f) => (
+                    <MenuItem key={f.id} value={f.id}>
+                      {f.number} — {f.amount?.toLocaleString()} DT
                     </MenuItem>
                   ))}
                 </Select>
@@ -849,6 +949,16 @@ export const InvoicesList = () => {
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <Typography variant="body2" color="text.secondary">
+                    Facture d'achat
+                  </Typography>
+                  <Typography>
+                    {selectedInvoice.factureAchatNumber ||
+                      selectedInvoice.factureAchat?.number ||
+                      "-"}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="body2" color="text.secondary">
                     Date
                   </Typography>
                   <Typography>
@@ -867,6 +977,23 @@ export const InvoicesList = () => {
                     {selectedInvoice.amount
                       ? `${selectedInvoice.amount.toLocaleString()} DT`
                       : "-"}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="body2" color="text.secondary">
+                    Gain
+                  </Typography>
+                  <Typography
+                    fontWeight={700}
+                    color={
+                      selectedInvoice.gain > 0
+                        ? "success.main"
+                        : selectedInvoice.gain < 0
+                          ? "error.main"
+                          : "text.secondary"
+                    }
+                  >
+                    {formatGain(selectedInvoice.gain)}
                   </Typography>
                 </Grid>
                 <Grid item xs={12}>
