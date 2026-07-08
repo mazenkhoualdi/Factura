@@ -36,6 +36,8 @@ import WindowIcon from "@mui/icons-material/Window";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 import TrackChangesIcon from "@mui/icons-material/TrackChanges";
+import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
+import RequestQuoteIcon from "@mui/icons-material/RequestQuote";
 
 const menuItems = [
   {
@@ -84,6 +86,16 @@ const menuItems = [
     icon: <PaymentsIcon />,
   },
   {
+    path: "/devis-achats",
+    label: "Devis d'achat",
+    icon: <RequestQuoteIcon />,
+  },
+  {
+    path: "/factures-achats",
+    label: "Factures d'achat",
+    icon: <ShoppingCartIcon />,
+  },
+  {
     path: "/traceability",
     label: "Traçabilité",
     icon: <RouteIcon />,
@@ -127,6 +139,13 @@ const menuGroups = [
     title: "Finances",
     icon: <AccountBalanceIcon sx={{ fontSize: 18 }} />,
     items: menuItems.filter((item) => ["/payments"].includes(item.path)),
+  },
+  {
+    title: "Achats",
+    icon: <ShoppingCartIcon sx={{ fontSize: 18 }} />,
+    items: menuItems.filter((item) =>
+      ["/devis-achats", "/factures-achats"].includes(item.path),
+    ),
   },
   {
     title: "Suivi & Analyse",

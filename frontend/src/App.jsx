@@ -10,6 +10,8 @@ import { BdcList } from './components/BDC/BdcList';
 import { BlList } from './components/BL/BlList';
 import { AttachmentsList } from './components/Attachments/AttachmentsList';
 import { InvoicesList } from './components/Invoices/InvoicesList';
+import { DevisAchatList } from './components/DevisAchat/DevisAchatList';
+import { FactureAchatList } from './components/FactureAchat/FactureAchatList';
 import { PaymentsList } from './components/Payments/PaymentsList';
 import { Traceability } from './components/Traceability/Traceability';
 import { Timeline } from './components/Timeline/Timeline';
@@ -30,6 +32,8 @@ function App() {
                     <Route path="/bl" element={<BlList />} />
                     <Route path="/attachments" element={<AttachmentsList />} />
                     <Route path="/invoices" element={<InvoicesList />} />
+                    <Route path="/devis-achats" element={<DevisAchatList />} />
+                    <Route path="/factures-achats" element={<FactureAchatList />} />
                     <Route path="/payments" element={<PaymentsList />} />
                     <Route path="/traceability" element={<Traceability />} />
                     <Route path="/timeline" element={<Timeline />} />
