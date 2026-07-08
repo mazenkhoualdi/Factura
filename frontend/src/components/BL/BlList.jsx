@@ -143,9 +143,11 @@ export const BlList = () => {
 
     setAddLoading(true);
     try {
+      const selectedBdc = bdcList.find((d) => d.id === newBl.bdcId);
       const data = {
         ...newBl,
         amount: parseFloat(newBl.amount) || 0,
+        bdcNumber: selectedBdc?.number || "", // ← AJOUT CRUCIAL
       };
       const response = await api.post("/bl", data);
 
@@ -206,9 +208,11 @@ export const BlList = () => {
 
     setEditLoading(true);
     try {
+      const selectedBdc = bdcList.find((d) => d.id === editFormData.bdcId);
       const data = {
         ...editFormData,
         amount: parseFloat(editFormData.amount) || 0,
+        bdcNumber: selectedBdc?.number || "", // ← AJOUT CRUCIAL
       };
       await api.put(`/bl/${editingBl.id}`, data);
 
@@ -312,7 +316,7 @@ export const BlList = () => {
   // ============================================================
   const handleOpenCreate = () => {
     setNewBl({
-      number: `BL-${String(bl.length + 1).padStart(4, "0")}`,
+      number: "",
       bdcId: "",
       date: new Date().toISOString().split("T")[0],
       description: "",
@@ -482,8 +486,12 @@ export const BlList = () => {
               <TextField
                 label="Numéro"
                 fullWidth
+                required
+                placeholder="Ex: BL-0001"
                 value={newBl.number}
-                disabled
+                onChange={(e) =>
+                  setNewBl({ ...newBl, number: e.target.value })
+                }
               />
             </Grid>
             <Grid item xs={12} sm={6}>
