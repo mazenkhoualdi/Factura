@@ -59,6 +59,8 @@ export const AttachmentsList = () => {
   const [attachments, setAttachments] = useState([]);
   const [blList, setBlList] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [dateDebut, setDateDebut] = useState("");
+  const [dateFin, setDateFin] = useState("");
   const [loading, setLoading] = useState(false);
 
   // États pour l'ajout
@@ -127,12 +129,16 @@ export const AttachmentsList = () => {
     loadBl();
   }, []);
 
-  const filteredAttachments = attachments.filter(
-    (d) =>
+  const filteredAttachments = attachments.filter((d) => {
+    const matchesSearch =
       d.number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       d.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      d.blNumber?.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+      d.blNumber?.toLowerCase().includes(searchTerm.toLowerCase());
+    const dOnly = d.date ? String(d.date).slice(0, 10) : null;
+    const matchesDateDebut = !dateDebut || (dOnly && dOnly >= dateDebut);
+    const matchesDateFin = !dateFin || (dOnly && dOnly <= dateFin);
+    return matchesSearch && matchesDateDebut && matchesDateFin;
+  });
 
   // ============================================================
   // AJOUTER UN ATTACHEMENT
@@ -261,7 +267,7 @@ export const AttachmentsList = () => {
       alert("✅ Attachement supprimé avec succès !");
     } catch (error) {
       console.error("Erreur suppression attachement", error);
-      alert("❌ erreur lors de la suppression de l'attachement");
+      alert("❌ Erreur lors de la suppression de l'attachement");
     } finally {
       setDeleteLoading(false);
     }
@@ -367,6 +373,24 @@ export const AttachmentsList = () => {
                 <SearchIcon sx={{ mr: 1, color: "text.secondary" }} />
               ),
             }}
+          />
+          <TextField
+            size="small"
+            type="date"
+            label="Du"
+            value={dateDebut}
+            onChange={(e) => setDateDebut(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            sx={{ width: 160 }}
+          />
+          <TextField
+            size="small"
+            type="date"
+            label="Au"
+            value={dateFin}
+            onChange={(e) => setDateFin(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            sx={{ width: 160 }}
           />
           <Button
             variant="contained"
@@ -975,4 +999,3 @@ export const AttachmentsList = () => {
     </Box>
   );
 };
-
