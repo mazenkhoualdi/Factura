@@ -324,7 +324,7 @@ export const BdcList = () => {
   // ============================================================
   const handleOpenCreate = () => {
     setNewBdc({
-      number: `BDC-${String(bdc.length + 1).padStart(4, "0")}`,
+      number: "",
       devisId: "",
       date: new Date().toISOString().split("T")[0],
       description: "",
@@ -496,8 +496,12 @@ export const BdcList = () => {
               <TextField
                 label="Numéro"
                 fullWidth
+                required
+                placeholder="Ex: BDC-0001"
                 value={newBdc.number}
-                disabled
+                onChange={(e) =>
+                  setNewBdc({ ...newBdc, number: e.target.value })
+                }
               />
             </Grid>
             <Grid item xs={12} sm={6}>
