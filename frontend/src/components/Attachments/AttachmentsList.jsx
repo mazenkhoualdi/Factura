@@ -325,7 +325,7 @@ export const AttachmentsList = () => {
   // ============================================================
   const handleOpenCreate = () => {
     setNewAttachment({
-      number: `ATT-${String(attachments.length + 1).padStart(4, "0")}`,
+      number: "",
       blId: "",
       date: new Date().toISOString().split("T")[0],
       description: "",
@@ -496,8 +496,12 @@ export const AttachmentsList = () => {
               <TextField
                 label="Numéro"
                 fullWidth
+                required
+                placeholder="Ex: ATT-0001"
                 value={newAttachment.number}
-                disabled
+                onChange={(e) =>
+                  setNewAttachment({ ...newAttachment, number: e.target.value })
+                }
               />
             </Grid>
             <Grid item xs={12} sm={6}>
