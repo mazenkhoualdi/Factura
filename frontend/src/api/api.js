@@ -42,7 +42,7 @@ export const viewPdf = async (endpoint, id) => {
     });
 
     const url = window.URL.createObjectURL(
-      new Blob([response.data], { type: "application/pdf" }),
+      new Blob([response.data], { type: "application/pdf" })
     );
     window.open(url, "_blank");
     setTimeout(() => window.URL.revokeObjectURL(url), 1000);
@@ -87,9 +87,29 @@ export const downloadFacturePdf = (id, fileName) =>
   downloadPdf("factures", id, fileName);
 export const viewFacturePdf = (id) => viewPdf("factures", id);
 
+// Devis Achats
+export const downloadDevisAchatPdf = (id, fileName) =>
+  downloadPdf("devis-achats", id, fileName);
+export const viewDevisAchatPdf = (id) => viewPdf("devis-achats", id);
+
+// Factures Achats
+export const downloadFactureAchatPdf = (id, fileName) =>
+  downloadPdf("factures-achats", id, fileName);
+export const viewFactureAchatPdf = (id) => viewPdf("factures-achats", id);
+
 // Paiements
 export const downloadPaiementPdf = (id, fileName) =>
   downloadPdf("paiements", id, fileName);
 export const viewPaiementPdf = (id) => viewPdf("paiements", id);
+
+// ============================================================
+// OBJECTIFS (KPIs configurables)
+// ============================================================
+
+// Objectif de gain total sur les achats — persisté en base côté backend
+export const getGainAchatsObjectif = (month) =>
+  api.get(`/objectifs/gain-achats/${month}`);
+export const setGainAchatsObjectif = (month, montant) =>
+  api.put(`/objectifs/gain-achats/${month}`, { montant });
 
 export default api;
