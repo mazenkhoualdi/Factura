@@ -16,19 +16,24 @@ public class ObjectifController {
 
     private final ObjectifService objectifService;
 
-    // Récupère l'objectif de gain total achats (204 si non défini)
-    @GetMapping("/gain-achats")
-    public ResponseEntity<Objectif> getGainAchats() {
-        Objectif objectif = objectifService.getGainAchats();
-        if (objectif == null) {
-            return ResponseEntity.noContent().build();
+    // Récupère l'objectif de gain achats pour un mois donné (format "YYYY-MM").
+    // Renvoie 204 si aucun objectif n'a encore été défini pour ce mois.
+    @GetMapping("/gain-achats/{month}")
+    public ResponseEntity<?> getGainAchats(@PathVariable String month) {
+        try {
+            Objectif objectif = objectifService.getGainAchats(month);
+            if (objectif == null) {
+                return ResponseEntity.noContent().build();
+            }
+            return ResponseEntity.ok(objectif);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
-        return ResponseEntity.ok(objectif);
     }
 
-    // Définit / met à jour l'objectif de gain total achats
-    @PutMapping("/gain-achats")
-    public ResponseEntity<?> setGainAchats(@RequestBody Map<String, Object> body) {
+    // Définit / met à jour l'objectif de gain achats pour un mois donné (format "YYYY-MM").
+    @PutMapping("/gain-achats/{month}")
+    public ResponseEntity<?> setGainAchats(@PathVariable String month, @RequestBody Map<String, Object> body) {
         Object rawMontant = body.get("montant");
         Double montant = rawMontant != null ? Double.valueOf(rawMontant.toString()) : null;
 
@@ -37,6 +42,10 @@ public class ObjectifController {
                     "error", "Le montant doit être un nombre strictement positif"));
         }
 
-        return ResponseEntity.ok(objectifService.setGainAchats(montant));
+        try {
+            return ResponseEntity.ok(objectifService.setGainAchats(month, montant));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 }
