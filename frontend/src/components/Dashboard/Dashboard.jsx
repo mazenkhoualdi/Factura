@@ -1,6 +1,8 @@
 import React from "react";
 import DashboardRoundedIcon from "@mui/icons-material/DashboardRounded";
 import TrendingUpRoundedIcon from "@mui/icons-material/TrendingUpRounded";
+import TrendingDownRoundedIcon from "@mui/icons-material/TrendingDownRounded";
+import TrendingFlatRoundedIcon from "@mui/icons-material/TrendingFlatRounded";
 import PieChartRoundedIcon from "@mui/icons-material/PieChartRounded";
 import BarChartRoundedIcon from "@mui/icons-material/BarChartRounded";
 import AssessmentIcon from "@mui/icons-material/Assessment";
@@ -20,6 +22,7 @@ import {
   IconButton,
   Button,
   Tooltip,
+  Chip,
 } from "@mui/material";
 import { useAppContext } from "../../context/AppContext";
 import { getGainAchatsObjectif, setGainAchatsObjectif } from "../../api/api";
@@ -121,9 +124,32 @@ const KpiCard = ({ label, value, icon, color }) => {
   );
 };
 
+// Formate une Date (ou string de date) en clé "YYYY-MM"
+const toMonthKey = (date) => {
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return null;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+};
+
+// Retourne la clé "YYYY-MM" du mois précédent une clé "YYYY-MM" donnée
+const getPreviousMonthKey = (monthKey) => {
+  const [year, month] = monthKey.split("-").map(Number);
+  const prev = new Date(year, month - 2, 1); // month est 1-indexé -> month-2 = mois précédent
+  return `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, "0")}`;
+};
+
+// Libellé humain d'une clé "YYYY-MM" (ex: "Juillet 2026")
+const formatMonthLabel = (monthKey) => {
+  const [year, month] = monthKey.split("-").map(Number);
+  const d = new Date(year, month - 1, 1);
+  const label = d.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+  return label.charAt(0).toUpperCase() + label.slice(1);
+};
+
 // Carte "Objectif de gain total achats" (même esprit que la jauge Taux d'encaissement)
 // L'objectif est persisté côté backend (table `objectifs`, clé GAIN_ACHATS) — pas de localStorage.
-const GainObjectifCard = ({ totalGainAchats }) => {
+// Le gain affiché est désormais celui du mois sélectionné, avec une comparaison au mois précédent.
+const GainObjectifCard = ({ factures }) => {
   const theme = useTheme();
 
   // null = pas encore chargé / pas encore défini. Aucune valeur par défaut n'est appliquée :
@@ -135,24 +161,79 @@ const GainObjectifCard = ({ totalGainAchats }) => {
   const [error, setError] = React.useState("");
   const [saving, setSaving] = React.useState(false);
 
-  // Chargement initial depuis le backend
+  // Mois sélectionné pour l'historique du gain (défaut : mois en cours)
+  const [selectedMonth, setSelectedMonth] = React.useState(() => toMonthKey(new Date()));
+
+  // Gain total du mois sélectionné
+  const totalGainAchats = React.useMemo(() => {
+    return factures
+      .filter((f) => f.date && toMonthKey(f.date) === selectedMonth)
+      .reduce((sum, f) => sum + (f.gain || 0), 0);
+  }, [factures, selectedMonth]);
+
+  // Gain total du mois précédent le mois sélectionné
+  const previousMonthKey = React.useMemo(
+    () => getPreviousMonthKey(selectedMonth),
+    [selectedMonth],
+  );
+  const previousMonthGain = React.useMemo(() => {
+    return factures
+      .filter((f) => f.date && toMonthKey(f.date) === previousMonthKey)
+      .reduce((sum, f) => sum + (f.gain || 0), 0);
+  }, [factures, previousMonthKey]);
+
+  // Évolution en % par rapport au mois précédent
+  const { trendDirection, trendPercent } = React.useMemo(() => {
+    if (previousMonthGain !== 0) {
+      const percent = ((totalGainAchats - previousMonthGain) / Math.abs(previousMonthGain)) * 100;
+      return {
+        trendPercent: percent,
+        trendDirection: percent > 0.01 ? "up" : percent < -0.01 ? "down" : "flat",
+      };
+    }
+    if (totalGainAchats !== 0) {
+      // Pas de gain le mois précédent : toute nouvelle valeur positive est une hausse
+      return { trendPercent: null, trendDirection: totalGainAchats > 0 ? "up" : "down" };
+    }
+    return { trendPercent: 0, trendDirection: "flat" };
+  }, [totalGainAchats, previousMonthGain]);
+
+  const trendColor =
+    trendDirection === "up" ? "#2e7d32" : trendDirection === "down" ? "#d32f2f" : "#757575";
+  const TrendIcon =
+    trendDirection === "up"
+      ? TrendingUpRoundedIcon
+      : trendDirection === "down"
+        ? TrendingDownRoundedIcon
+        : TrendingFlatRoundedIcon;
+  const trendLabel =
+    trendPercent === null
+      ? "Nouveau gain"
+      : `${trendPercent > 0 ? "+" : ""}${trendPercent.toFixed(1)}%`;
+
+  // Chargement de l'objectif depuis le backend, refait à chaque changement de mois
+  // sélectionné puisque l'objectif est désormais propre à chaque mois.
   React.useEffect(() => {
     let active = true;
+    setLoading(true);
+    setError("");
     (async () => {
       try {
-        const res = await getGainAchatsObjectif();
+        const res = await getGainAchatsObjectif(selectedMonth);
         if (!active) return;
-        // 204 No Content => pas encore d'objectif défini
+        // 204 No Content => pas encore d'objectif défini pour ce mois
         if (res.status === 204 || !res.data) {
           setObjectif(null);
           setEditing(true);
         } else {
           setObjectif(res.data.montant);
+          setEditing(false);
         }
       } catch (err) {
         if (!active) return;
         console.error("Erreur chargement de l'objectif gain achats :", err);
         setError("Impossible de contacter le serveur");
+        setObjectif(null);
         setEditing(true);
       } finally {
         if (active) setLoading(false);
@@ -161,7 +242,7 @@ const GainObjectifCard = ({ totalGainAchats }) => {
     return () => {
       active = false;
     };
-  }, []);
+  }, [selectedMonth]);
 
   const handleStartEdit = () => {
     setInputValue(objectif !== null ? String(objectif) : "");
@@ -170,7 +251,7 @@ const GainObjectifCard = ({ totalGainAchats }) => {
   };
 
   const handleCancelEdit = () => {
-    // On ne peut annuler que si un objectif existe déjà
+    // On ne peut annuler que si un objectif existe déjà pour ce mois
     if (objectif !== null) {
       setError("");
       setEditing(false);
@@ -186,7 +267,7 @@ const GainObjectifCard = ({ totalGainAchats }) => {
     setSaving(true);
     setError("");
     try {
-      const res = await setGainAchatsObjectif(val);
+      const res = await setGainAchatsObjectif(selectedMonth, val);
       setObjectif(res.data.montant);
       setEditing(false);
     } catch (err) {
@@ -196,17 +277,6 @@ const GainObjectifCard = ({ totalGainAchats }) => {
       setSaving(false);
     }
   };
-
-  if (loading) {
-    return (
-      <Card sx={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 4 }}>
-        <CardContent sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <CircularProgress size={24} sx={{ color: "#7b1fa2" }} />
-          <Typography color="text.secondary">Chargement de l'objectif…</Typography>
-        </CardContent>
-      </Card>
-    );
-  }
 
   const percentage =
     objectif && objectif > 0
@@ -258,6 +328,29 @@ const GainObjectifCard = ({ totalGainAchats }) => {
           </Typography>
         </Box>
 
+        <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
+          <TextField
+            size="small"
+            type="month"
+            value={selectedMonth}
+            onChange={(e) => e.target.value && setSelectedMonth(e.target.value)}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                borderRadius: 50,
+                bgcolor: "#7b1fa208",
+              },
+            }}
+            inputProps={{ style: { textAlign: "center", padding: "6px 10px" } }}
+          />
+        </Box>
+
+        {loading ? (
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 2, py: 4 }}>
+            <CircularProgress size={22} sx={{ color: "#7b1fa2" }} />
+            <Typography color="text.secondary">Chargement de l'objectif…</Typography>
+          </Box>
+        ) : (
+          <>
         {!editing && (
           <Tooltip title="Modifier l'objectif">
             <IconButton
@@ -340,6 +433,7 @@ const GainObjectifCard = ({ totalGainAchats }) => {
                 borderRadius: 2,
               }}
             >
+              Gain de <strong>{formatMonthLabel(selectedMonth)}</strong> :{" "}
               <strong>{totalGainAchats.toFixed(2)} DT</strong> réalisés sur
               l'objectif de{" "}
               <strong>{objectif.toFixed(2)} DT</strong>
@@ -364,6 +458,19 @@ const GainObjectifCard = ({ totalGainAchats }) => {
               sx={{ height: 12, borderRadius: 6, mb: 1 }}
             />
 
+            <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+              <Chip
+                icon={<TrendIcon sx={{ color: `${trendColor} !important` }} />}
+                label={`${trendLabel} vs ${formatMonthLabel(previousMonthKey)}`}
+                sx={{
+                  bgcolor: `${trendColor}15`,
+                  color: trendColor,
+                  fontWeight: 700,
+                  border: `1px solid ${trendColor}30`,
+                }}
+              />
+            </Box>
+
             <Box
               sx={{
                 display: "flex",
@@ -375,7 +482,7 @@ const GainObjectifCard = ({ totalGainAchats }) => {
             >
               <Box>
                 <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                  Gain réalisé
+                  Gain réalisé ({formatMonthLabel(selectedMonth)})
                 </Typography>
                 <Typography fontWeight={700} sx={{ color: "#7b1fa2" }}>
                   {totalGainAchats.toFixed(2)} DT
@@ -390,6 +497,8 @@ const GainObjectifCard = ({ totalGainAchats }) => {
                 </Typography>
               </Box>
             </Box>
+          </>
+        )}
           </>
         )}
       </CardContent>
@@ -430,6 +539,7 @@ export const Dashboard = () => {
     { label: "Total facturé", value: `${totalFactured.toFixed(2)} DT`, icon: <EuroIcon />, color: "#1976d2" },
     { label: "Total encaissé", value: `${totalPaid.toFixed(2)} DT`, icon: <PaymentsIcon />, color: "#2e7d32" },
     { label: "Reste à encaisser", value: `${totalRemaining.toFixed(2)} DT`, icon: <MoneyOffIcon />, color: "#d32f2f" },
+    { label: "Gain total achats", value: `${totalGainAchats.toFixed(2)} DT`, icon: <SavingsIcon />, color: totalGainAchats >= 0 ? "#2e7d32" : "#d32f2f" },
   ];
 
   const STATUS_COLORS = {
@@ -716,7 +826,7 @@ export const Dashboard = () => {
             </Grid>
 
             <Grid item xs={12} sm={6}>
-              <GainObjectifCard totalGainAchats={totalGainAchats} />
+              <GainObjectifCard factures={safeFactures} />
             </Grid>
           </Grid>
         </Grid>
