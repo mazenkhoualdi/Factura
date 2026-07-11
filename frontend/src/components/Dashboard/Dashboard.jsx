@@ -419,17 +419,17 @@ const GainObjectifCard = ({ factures }) => {
           },
         }}
       >
-        <CardContent sx={{ position: "relative", zIndex: 1 }}>
+        <CardContent sx={{ position: "relative", zIndex: 1, py: 2 }}>
           <Box
             sx={{
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               gap: 1,
-              mb: 2,
+              mb: 1.5,
               background: alpha("#7b1fa2", 0.06),
               px: 2,
-              py: 1,
+              py: 0.75,
               borderRadius: 50,
               border: `1px solid ${alpha("#7b1fa2", 0.12)}`,
               width: "fit-content",
@@ -442,7 +442,7 @@ const GainObjectifCard = ({ factures }) => {
             </Typography>
           </Box>
 
-          <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
+          <Box sx={{ display: "flex", justifyContent: "center", mb: 1.5 }}>
             <TextField
               size="small"
               type="month"
@@ -462,7 +462,7 @@ const GainObjectifCard = ({ factures }) => {
                   },
                 },
               }}
-              inputProps={{ style: { textAlign: "center", padding: "6px 10px" } }}
+              inputProps={{ style: { textAlign: "center", padding: "4px 10px" } }}
             />
           </Box>
 
@@ -563,10 +563,10 @@ const GainObjectifCard = ({ factures }) => {
                       color="text.secondary"
                       align="center"
                       sx={{
-                        mb: 3,
-                        lineHeight: 1.7,
+                        mb: 2,
+                        lineHeight: 1.6,
                         background: alpha(theme.palette.grey[100], 0.4),
-                        p: 1.5,
+                        p: 1,
                         borderRadius: 2,
                       }}
                     >
@@ -577,12 +577,12 @@ const GainObjectifCard = ({ factures }) => {
                     </Typography>
 
                     <Typography
-                      variant="h2"
+                      variant="h3"
                       fontWeight={800}
                       align="center"
                       sx={{
                         color: progressColor,
-                        mb: 2,
+                        mb: 1.5,
                         textShadow: `0 4px 12px ${alpha(progressColor, 0.2)}`,
                         transition: "all 0.3s ease",
                       }}
@@ -595,10 +595,11 @@ const GainObjectifCard = ({ factures }) => {
                       value={Math.min(Math.max(percentage, 0), 100)}
                     />
 
-                    <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+                    <Box sx={{ display: "flex", justifyContent: "center", mt: 1.5 }}>
                       <Chip
                         icon={<TrendIcon sx={{ color: `${trendColor} !important` }} />}
                         label={`${trendLabel} vs ${formatMonthLabel(previousMonthKey)}`}
+                        size="small"
                         sx={{
                           bgcolor: alpha(trendColor, 0.08),
                           color: trendColor,
@@ -616,8 +617,8 @@ const GainObjectifCard = ({ factures }) => {
                       sx={{
                         display: "flex",
                         justifyContent: "space-between",
-                        mt: 2,
-                        pt: 2,
+                        mt: 1.5,
+                        pt: 1.5,
                         borderTop: `1px solid ${theme.palette.divider}`,
                       }}
                     >
