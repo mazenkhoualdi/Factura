@@ -17,6 +17,12 @@ import java.util.Map;
  * création). Le seul lien fiable entre deux documents est le numéro dénormalisé stocké sur l'enfant
  * (ex: BL.bdcNumber contient le "number" du BDC source). Toute la logique ci-dessous navigue donc
  * exclusivement par ces numéros, jamais par les relations Java, afin de refléter la réalité des données.
+ *
+ * Quel que soit le type de document trouvé par la recherche, on résout le chemin dans les deux sens
+ * (remontée vers le Devis ET descente vers les Paiements) à partir de CE document, en ajoutant chaque
+ * maillon résolu au résultat au fur et à mesure. Un maillon manquant ou introuvable n'empêche plus
+ * l'affichage des maillons déjà connus (notamment le document recherché lui-même), contrairement à
+ * l'ancienne implémentation qui abandonnait tout l'affichage dès qu'un seul chaînon en amont manquait.
  */
 @Service
 @RequiredArgsConstructor
@@ -39,7 +45,7 @@ public class TraceabilityService {
         if (devis != null) {
             result.put("type", "devis");
             result.put("document", devis);
-            buildChainFromDevis(result, devis);
+            buildChain(result, devis, null, null, null, null);
             return result;
         }
 
@@ -47,7 +53,8 @@ public class TraceabilityService {
         if (bdc != null) {
             result.put("type", "bdc");
             result.put("document", bdc);
-            buildChainFromDevis(result, devisRepository.findByNumber(bdc.getDevisNumber()));
+            Devis d = devisRepository.findByNumber(bdc.getDevisNumber());
+            buildChain(result, d, bdc, null, null, null);
             return result;
         }
 
@@ -55,7 +62,9 @@ public class TraceabilityService {
         if (bl != null) {
             result.put("type", "bl");
             result.put("document", bl);
-            buildChainFromDevis(result, resolveDevisFromBdcNumber(bl.getBdcNumber()));
+            BDC b = bdcRepository.findByNumber(bl.getBdcNumber());
+            Devis d = b != null ? devisRepository.findByNumber(b.getDevisNumber()) : null;
+            buildChain(result, d, b, bl, null, null);
             return result;
         }
 
@@ -63,7 +72,10 @@ public class TraceabilityService {
         if (attachement != null) {
             result.put("type", "attachement");
             result.put("document", attachement);
-            buildChainFromDevis(result, resolveDevisFromBlNumber(attachement.getBlNumber()));
+            BL b = blRepository.findByNumber(attachement.getBlNumber());
+            BDC bd = b != null ? bdcRepository.findByNumber(b.getBdcNumber()) : null;
+            Devis d = bd != null ? devisRepository.findByNumber(bd.getDevisNumber()) : null;
+            buildChain(result, d, bd, b, attachement, null);
             return result;
         }
 
@@ -71,7 +83,11 @@ public class TraceabilityService {
         if (facture != null) {
             result.put("type", "facture");
             result.put("document", facture);
-            buildChainFromDevis(result, resolveDevisFromAttachmentNumber(facture.getAttachmentNumber()));
+            Attachement a = attachementRepository.findByNumber(facture.getAttachmentNumber());
+            BL b = a != null ? blRepository.findByNumber(a.getBlNumber()) : null;
+            BDC bd = b != null ? bdcRepository.findByNumber(b.getBdcNumber()) : null;
+            Devis d = bd != null ? devisRepository.findByNumber(bd.getDevisNumber()) : null;
+            buildChain(result, d, bd, b, a, facture);
             return result;
         }
 
@@ -79,7 +95,18 @@ public class TraceabilityService {
         if (paiement != null) {
             result.put("type", "paiement");
             result.put("document", paiement);
-            buildChainFromDevis(result, resolveDevisFromFactureNumber(paiement.getFactureNumber()));
+            Facture f = factureRepository.findByNumber(paiement.getFactureNumber());
+            Attachement a = f != null ? attachementRepository.findByNumber(f.getAttachmentNumber()) : null;
+            BL b = a != null ? blRepository.findByNumber(a.getBlNumber()) : null;
+            BDC bd = b != null ? bdcRepository.findByNumber(b.getBdcNumber()) : null;
+            Devis d = bd != null ? devisRepository.findByNumber(bd.getDevisNumber()) : null;
+            buildChain(result, d, bd, b, a, f);
+            // Le(s) paiement(s) doivent apparaître même si la facture elle-même est introuvable.
+            if (f != null) {
+                result.put("paiements", paiementRepository.findByFactureNumber(f.getNumber()));
+            } else {
+                result.put("paiements", List.of(paiement));
+            }
             return result;
         }
 
@@ -87,71 +114,46 @@ public class TraceabilityService {
     }
 
     // ------------------------------------------------------------------
-    // Remontée de la chaîne (à partir d'un maillon intermédiaire vers le Devis)
+    // Construction du résultat à partir de tout ce qui a pu être résolu,
+    // dans un sens (remontée) comme dans l'autre (descente), sans jamais
+    // s'arrêter prématurément si un maillon intermédiaire est manquant.
     // ------------------------------------------------------------------
-
-    private Devis resolveDevisFromBdcNumber(String bdcNumber) {
-        if (bdcNumber == null) return null;
-        BDC bdc = bdcRepository.findByNumber(bdcNumber);
-        return bdc != null ? devisRepository.findByNumber(bdc.getDevisNumber()) : null;
-    }
-
-    private Devis resolveDevisFromBlNumber(String blNumber) {
-        if (blNumber == null) return null;
-        BL bl = blRepository.findByNumber(blNumber);
-        return bl != null ? resolveDevisFromBdcNumber(bl.getBdcNumber()) : null;
-    }
-
-    private Devis resolveDevisFromAttachmentNumber(String attachmentNumber) {
-        if (attachmentNumber == null) return null;
-        Attachement attachement = attachementRepository.findByNumber(attachmentNumber);
-        return attachement != null ? resolveDevisFromBlNumber(attachement.getBlNumber()) : null;
-    }
-
-    private Devis resolveDevisFromFactureNumber(String factureNumber) {
-        if (factureNumber == null) return null;
-        Facture facture = factureRepository.findByNumber(factureNumber);
-        return facture != null ? resolveDevisFromAttachmentNumber(facture.getAttachmentNumber()) : null;
-    }
-
-    // ------------------------------------------------------------------
-    // Descente de la chaîne (à partir du Devis vers les Paiements)
-    // S'arrête dès qu'un maillon est manquant, sans jamais lever de NullPointerException.
-    // ------------------------------------------------------------------
-
-    private void buildChainFromDevis(Map<String, Object> result, Devis devis) {
-        if (devis == null) {
-            return;
+    private void buildChain(Map<String, Object> result, Devis devis, BDC bdc, BL bl,
+                             Attachement attachement, Facture facture) {
+        if (devis != null) {
+            result.put("devis", devis);
+            result.put("client", buildClientInfo(devis));
+            if (bdc == null) {
+                bdc = bdcRepository.findByDevisNumber(devis.getNumber());
+            }
         }
-        result.put("devis", devis);
-        result.put("client", buildClientInfo(devis));
 
-        BDC bdc = bdcRepository.findByDevisNumber(devis.getNumber());
-        if (bdc == null) {
-            return;
+        if (bdc != null) {
+            result.put("bdc", bdc);
+            if (bl == null) {
+                bl = blRepository.findByBdcNumber(bdc.getNumber());
+            }
         }
-        result.put("bdc", bdc);
 
-        BL bl = blRepository.findByBdcNumber(bdc.getNumber());
-        if (bl == null) {
-            return;
+        if (bl != null) {
+            result.put("bl", bl);
+            if (attachement == null) {
+                attachement = attachementRepository.findByBlNumber(bl.getNumber());
+            }
         }
-        result.put("bl", bl);
 
-        Attachement attachement = attachementRepository.findByBlNumber(bl.getNumber());
-        if (attachement == null) {
-            return;
+        if (attachement != null) {
+            result.put("attachement", attachement);
+            if (facture == null) {
+                facture = factureRepository.findByAttachmentNumber(attachement.getNumber());
+            }
         }
-        result.put("attachement", attachement);
 
-        Facture facture = factureRepository.findByAttachmentNumber(attachement.getNumber());
-        if (facture == null) {
-            return;
+        if (facture != null) {
+            result.put("facture", facture);
+            List<Paiement> paiements = paiementRepository.findByFactureNumber(facture.getNumber());
+            result.put("paiements", paiements);
         }
-        result.put("facture", facture);
-
-        List<Paiement> paiements = paiementRepository.findByFactureNumber(facture.getNumber());
-        result.put("paiements", paiements);
     }
 
     /**
