@@ -64,7 +64,6 @@ const STATUS_CONFIG = {
   pending: { label: "En attente", color: "#ff9800", bg: "#fff3e0" },
   accepted: { label: "Accepté", color: "#4caf50", bg: "#e8f5e9" },
   refused: { label: "Refusé", color: "#f44336", bg: "#fce4ec" },
-  validated: { label: "Validé", color: "#2196f3", bg: "#e3f2fd" },
 };
 
 const getStatusLabel = (status) => STATUS_CONFIG[status]?.label || status;
