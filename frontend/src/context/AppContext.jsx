@@ -3,7 +3,18 @@ import api from "../api/api";
 
 const AppContext = createContext();
 
+const getInitialDarkMode = () => {
+  try {
+    const saved = localStorage.getItem("darkMode");
+    if (saved !== null) return saved === "true";
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  } catch (error) {
+    return false;
+  }
+};
+
 export const AppProvider = ({ children }) => {
+  const [darkMode, setDarkMode] = useState(getInitialDarkMode);
   const [clients, setClients] = useState([]);
   const [societies, setSocieties] = useState([]);
   const [devis, setDevis] = useState([]);
@@ -11,6 +22,7 @@ export const AppProvider = ({ children }) => {
   const [bl, setBl] = useState([]);
   const [attachements, setAttachements] = useState([]);
   const [factures, setFactures] = useState([]);
+  const [facturesAchats, setFacturesAchats] = useState([]);
   const [paiements, setPaiements] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -80,6 +92,15 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const loadFacturesAchats = async () => {
+    try {
+      const response = await api.get("/factures-achats");
+      setFacturesAchats(response.data || []);
+    } catch (error) {
+      console.error("Erreur chargement factures d'achat", error);
+    }
+  };
+
   const loadPaiements = async () => {
     try {
       const response = await api.get("/paiements");
@@ -107,6 +128,7 @@ export const AppProvider = ({ children }) => {
       loadBl(),
       loadAttachements(),
       loadFactures(),
+      loadFacturesAchats(),
       loadPaiements(),
       loadNotifications(),
     ]);
@@ -116,7 +138,20 @@ export const AppProvider = ({ children }) => {
     loadAllData();
   }, []);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem("darkMode", String(darkMode));
+    } catch (error) {
+      console.error("Erreur sauvegarde préférence de thème", error);
+    }
+  }, [darkMode]);
+
+  const toggleDarkMode = () => setDarkMode((prev) => !prev);
+
   const value = {
+    darkMode,
+    toggleDarkMode,
+    setDarkMode,
     clients,
     societies, // <-- AJOUT
     devis,
@@ -124,6 +159,7 @@ export const AppProvider = ({ children }) => {
     bl,
     attachements,
     factures,
+    facturesAchats,
     paiements,
     notifications,
     loading,
@@ -134,6 +170,7 @@ export const AppProvider = ({ children }) => {
     loadBl,
     loadAttachements,
     loadFactures,
+    loadFacturesAchats,
     loadPaiements,
     loadNotifications,
     loadAllData,
