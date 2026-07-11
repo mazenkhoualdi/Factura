@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Typography } from '@mui/material';  // <-- IMPORT ESSENTIEL
 import { MainLayout } from './components/Layout/MainLayout';
+import { SettingsPage } from './components/Settings/SettingsPage';
 import { Dashboard } from './components/Dashboard/Dashboard';
 import { ClientsList } from './components/Clients/ClientsList';
 import { SocietiesList } from './components/Societies/SocietiesList';
@@ -15,9 +15,6 @@ import { FactureAchatList } from './components/FactureAchat/FactureAchatList';
 import { PaymentsList } from './components/Payments/PaymentsList';
 import { Traceability } from './components/Traceability/Traceability';
 import { Timeline } from './components/Timeline/Timeline';
-
-// Ce composant utilise Typography, qui est maintenant importé
-const SettingsPage = () => <Typography variant="h4">Paramètres - à venir</Typography>;
 
 function App() {
     return (
