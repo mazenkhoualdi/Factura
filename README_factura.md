@@ -1,4 +1,4 @@
-# 🧾 Factura – Prototype Frontend
+   # 🧾 Factura – Prototype Frontend
 
 > **Application desktop de traçabilité commerciale**
 >
