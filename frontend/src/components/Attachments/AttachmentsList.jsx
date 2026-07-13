@@ -50,6 +50,8 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import AttachFileIconOutlined from "@mui/icons-material/AttachFile";
+import BusinessIcon from "@mui/icons-material/Business";
+import PersonIcon from "@mui/icons-material/Person";
 import api, { viewAttachementPdf, downloadAttachementPdf } from "../../api/api";
 
 // Animations
@@ -701,6 +703,7 @@ export const AttachmentsList = () => {
       const matchesSearch =
         d.number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         d.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        d.clientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         d.blNumber?.toLowerCase().includes(searchTerm.toLowerCase());
       const dOnly = d.date ? String(d.date).slice(0, 10) : null;
       const matchesDateDebut = !dateDebut || (dOnly && dOnly >= dateDebut);
@@ -733,6 +736,8 @@ export const AttachmentsList = () => {
         ...newAttachment,
         amount: parseFloat(newAttachment.amount) || 0,
         blNumber: selectedBl?.number || "",
+        clientName: selectedBl?.clientName || "",
+        clientType: selectedBl?.clientType || "client",
       };
       const response = await api.post("/attachements", data);
 
@@ -806,6 +811,8 @@ export const AttachmentsList = () => {
         ...editFormData,
         amount: parseFloat(editFormData.amount) || 0,
         blNumber: selectedBl?.number || "",
+        clientName: selectedBl?.clientName || "",
+        clientType: selectedBl?.clientType || "client",
       };
       await api.put(`/attachements/${editingAttachment.id}`, data);
 
@@ -1009,6 +1016,7 @@ export const AttachmentsList = () => {
               <TableRow>
                 <TableCell sx={{ fontWeight: 700 }}>Numéro</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>BL source</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Client / Société</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Date</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Description</TableCell>
                 <TableCell sx={{ fontWeight: 700 }} align="right">
@@ -1023,7 +1031,7 @@ export const AttachmentsList = () => {
             <TableBody>
               {paginatedAttachments.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
+                  <TableCell colSpan={8} align="center" sx={{ py: 8 }}>
                     <AttachFileIconOutlined
                       sx={{ fontSize: 60, color: "grey.300", mb: 2 }}
                     />
@@ -1055,6 +1063,18 @@ export const AttachmentsList = () => {
                       >
                         <DescriptionIcon fontSize="small" color="action" />
                         {d.blNumber || d.bl?.number || "-"}
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
+                        {d.clientType === "society" ? (
+                          <BusinessIcon fontSize="small" color="action" />
+                        ) : (
+                          <PersonIcon fontSize="small" color="action" />
+                        )}
+                        {d.clientName || "-"}
                       </Box>
                     </TableCell>
                     <TableCell>
