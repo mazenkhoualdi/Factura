@@ -52,6 +52,8 @@ import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import ReceiptIcon from "@mui/icons-material/Receipt";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
+import BusinessIcon from "@mui/icons-material/Business";
+import PersonIcon from "@mui/icons-material/Person";
 import api, { viewFacturePdf, downloadFacturePdf } from "../../api/api";
 
 // Animations
@@ -738,6 +740,7 @@ export const InvoicesList = () => {
       const matchesSearch =
         d.number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         d.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        d.clientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         d.attachmentNumber?.toLowerCase().includes(searchTerm.toLowerCase());
       const dOnly = d.date ? String(d.date).slice(0, 10) : null;
       const matchesDateDebut = !dateDebut || (dOnly && dOnly >= dateDebut);
@@ -778,6 +781,8 @@ export const InvoicesList = () => {
         ...newInvoice,
         amount: parseFloat(newInvoice.amount) || 0,
         attachmentNumber: selectedAttachment?.number || "",
+        clientName: selectedAttachment?.clientName || "",
+        clientType: selectedAttachment?.clientType || "client",
         factureAchat: selectedFactureAchat ? { id: selectedFactureAchat.id } : null,
       };
       const response = await api.post("/factures", data);
@@ -855,6 +860,8 @@ export const InvoicesList = () => {
         ...editFormData,
         amount: parseFloat(editFormData.amount) || 0,
         attachmentNumber: selectedAttachment?.number || "",
+        clientName: selectedAttachment?.clientName || "",
+        clientType: selectedAttachment?.clientType || "client",
         factureAchat: selectedFactureAchat ? { id: selectedFactureAchat.id } : null,
       };
       await api.put(`/factures/${editingInvoice.id}`, data);
@@ -1059,6 +1066,7 @@ export const InvoicesList = () => {
               <TableRow>
                 <TableCell sx={{ fontWeight: 700 }}>Numéro</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Attachement source</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Client / Société</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Facture d'achat</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Date</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Montant</TableCell>
@@ -1072,7 +1080,7 @@ export const InvoicesList = () => {
             <TableBody>
               {paginatedInvoices.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} align="center" sx={{ py: 8 }}>
+                  <TableCell colSpan={9} align="center" sx={{ py: 8 }}>
                     <ReceiptIcon
                       sx={{ fontSize: 60, color: "grey.300", mb: 2 }}
                     />
@@ -1104,6 +1112,18 @@ export const InvoicesList = () => {
                       >
                         <DescriptionIcon fontSize="small" color="action" />
                         {d.attachmentNumber || d.attachement?.number || "-"}
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
+                        {d.clientType === "society" ? (
+                          <BusinessIcon fontSize="small" color="action" />
+                        ) : (
+                          <PersonIcon fontSize="small" color="action" />
+                        )}
+                        {d.clientName || "-"}
                       </Box>
                     </TableCell>
                     <TableCell>
