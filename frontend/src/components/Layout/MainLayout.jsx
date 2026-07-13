@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Box,
   Drawer,
@@ -6,22 +6,15 @@ import {
   Toolbar,
   Typography,
   IconButton,
-  Badge,
   Avatar,
-  Menu,
-  MenuItem,
-  Divider,
   Breadcrumbs,
-  Chip,
   Tooltip,
   alpha,
   useTheme,
   Stack,
-  Zoom,
 } from "@mui/material";
 import { useLocation, Link } from "react-router-dom";
 import MenuIcon from "@mui/icons-material/Menu";
-import NotificationsIcon from "@mui/icons-material/Notifications";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import PeopleIcon from "@mui/icons-material/People";
 import BusinessIcon from "@mui/icons-material/Business";
@@ -62,14 +55,24 @@ export const MainLayout = ({ children }) => {
   const theme = useTheme();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [notifAnchor, setNotifAnchor] = useState(null);
-  const { notifications } = useAppContext();
-
-  const unreadCount = notifications?.filter((n) => !n.read)?.length || 0;
+  const { loadAllData } = useAppContext();
+  const isFirstRender = useRef(true);
 
   const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
-  const handleNotifOpen = (e) => setNotifAnchor(e.currentTarget);
-  const handleNotifClose = () => setNotifAnchor(null);
+
+  // Rafraîchit toutes les données à chaque changement de page (clic sur le
+  // menu, breadcrumb, etc.) afin que la page affichée reflète toujours l'état
+  // réel de la base de données, et non une valeur mise en cache en mémoire.
+  useEffect(() => {
+    // Le tout premier chargement est déjà géré par AppProvider (loadAllData
+    // au montage) : on évite donc de le déclencher deux fois d'affilée.
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    loadAllData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
 
   // Obtenir le nom de la page actuelle
   const currentRoute = routeMap[location.pathname];
@@ -215,7 +218,7 @@ export const MainLayout = ({ children }) => {
             </Breadcrumbs>
           </Box>
 
-          {/* Partie droite : Notifications + Avatar */}
+          {/* Partie droite : Avatar */}
           <Stack
             direction="row"
             alignItems="center"
@@ -225,156 +228,6 @@ export const MainLayout = ({ children }) => {
               overflow: "hidden",
             }}
           >
-            {/* Notifications */}
-            <Tooltip title="Notifications" arrow>
-              <IconButton
-                color="inherit"
-                onClick={handleNotifOpen}
-                sx={{
-                  bgcolor:
-                    unreadCount > 0
-                      ? alpha(theme.palette.primary.main, 0.04)
-                      : "transparent",
-                  "&:hover": {
-                    bgcolor: alpha(theme.palette.primary.main, 0.08),
-                  },
-                }}
-              >
-                <Badge
-                  badgeContent={unreadCount}
-                  color="error"
-                  sx={{
-                    "& .MuiBadge-badge": {
-                      fontSize: "0.6rem",
-                      height: 18,
-                      minWidth: 18,
-                      padding: "0 4px",
-                      background: `linear-gradient(135deg, ${theme.palette.error.main}, ${theme.palette.error.dark})`,
-                      boxShadow: `0 2px 10px ${alpha(theme.palette.error.main, 0.3)}`,
-                    },
-                  }}
-                >
-                  <NotificationsIcon />
-                </Badge>
-              </IconButton>
-            </Tooltip>
-
-            {/* Menu Notifications */}
-            <Menu
-              anchorEl={notifAnchor}
-              open={Boolean(notifAnchor)}
-              onClose={handleNotifClose}
-              anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-              transformOrigin={{ vertical: "top", horizontal: "right" }}
-              TransitionComponent={Zoom}
-              PaperProps={{
-                sx: {
-                  width: 380,
-                  maxHeight: 450,
-                  mt: 1.5,
-                  borderRadius: 2,
-                  boxShadow: theme.shadows[8],
-                  border: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
-                },
-              }}
-            >
-              <Box
-                sx={{
-                  p: 2,
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <Typography fontWeight={700} fontSize="0.95rem">
-                  Notifications
-                </Typography>
-                {unreadCount > 0 && (
-                  <Chip
-                    label={`${unreadCount} non lues`}
-                    size="small"
-                    sx={{
-                      bgcolor: alpha(theme.palette.primary.main, 0.08),
-                      color: theme.palette.primary.main,
-                      fontWeight: 600,
-                      fontSize: "0.6rem",
-                    }}
-                  />
-                )}
-              </Box>
-              <Divider />
-              {(notifications || []).slice(0, 5).map((n) => (
-                <MenuItem
-                  key={n.id}
-                  onClick={handleNotifClose}
-                  sx={{
-                    whiteSpace: "normal",
-                    py: 1.5,
-                    px: 2,
-                    borderLeft: n.read
-                      ? "3px solid transparent"
-                      : `3px solid ${theme.palette.primary.main}`,
-                    bgcolor: n.read
-                      ? "transparent"
-                      : alpha(theme.palette.primary.main, 0.02),
-                    "&:hover": {
-                      bgcolor: alpha(theme.palette.primary.main, 0.04),
-                    },
-                  }}
-                >
-                  <Box>
-                    <Typography
-                      variant="body2"
-                      fontWeight={n.read ? 400 : 600}
-                      sx={{ fontSize: "0.85rem" }}
-                    >
-                      {n.title}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ display: "block", mt: 0.25 }}
-                    >
-                      {n.message}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      color="text.disabled"
-                      sx={{ display: "block", mt: 0.5, fontSize: "0.6rem" }}
-                    >
-                      {new Date(n.createdAt).toLocaleDateString("fr-FR", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </Typography>
-                  </Box>
-                </MenuItem>
-              ))}
-              <Divider />
-              <MenuItem
-                onClick={handleNotifClose}
-                sx={{
-                  justifyContent: "center",
-                  py: 1.5,
-                  "&:hover": {
-                    bgcolor: alpha(theme.palette.primary.main, 0.04),
-                  },
-                }}
-              >
-                <Typography
-                  variant="body2"
-                  color="primary"
-                  fontWeight={600}
-                  sx={{ fontSize: "0.8rem" }}
-                >
-                  Voir toutes les notifications
-                </Typography>
-              </MenuItem>
-            </Menu>
-
             {/* Avatar utilisateur */}
             <Tooltip title="Profil" arrow>
               <Avatar
