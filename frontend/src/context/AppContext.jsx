@@ -25,6 +25,10 @@ export const AppProvider = ({ children }) => {
   const [facturesAchats, setFacturesAchats] = useState([]);
   const [paiements, setPaiements] = useState([]);
   const [loading, setLoading] = useState(false);
+  // Indique si le tout premier chargement des données (au lancement de
+  // l'application) est en cours, afin d'afficher l'écran de démarrage
+  // (splash screen) avec le logo de la société.
+  const [initialLoading, setInitialLoading] = useState(true);
 
   const loadClients = async () => {
     try {
@@ -123,9 +127,19 @@ export const AppProvider = ({ children }) => {
     ]);
   };
 
+  // Durée minimale d'affichage de l'écran de démarrage (splash screen),
+  // pour laisser le temps au logo de s'afficher correctement même si les
+  // données se chargent très vite.
+  const MIN_SPLASH_DURATION_MS = 3000; // 3 secondes
+
   // Chargement initial des données
   useEffect(() => {
-    loadAllData();
+    const startTime = Date.now();
+    loadAllData().finally(() => {
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(MIN_SPLASH_DURATION_MS - elapsed, 0);
+      setTimeout(() => setInitialLoading(false), remaining);
+    });
   }, []);
 
   // Rafraîchissement automatique de toutes les données pour assurer
@@ -175,6 +189,7 @@ export const AppProvider = ({ children }) => {
     facturesAchats,
     paiements,
     loading,
+    initialLoading,
     loadClients,
     loadSocieties, // <-- AJOUT
     loadDevis,
