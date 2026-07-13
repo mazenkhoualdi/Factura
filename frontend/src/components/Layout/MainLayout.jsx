@@ -300,7 +300,7 @@ export const MainLayout = ({ children }) => {
           minHeight: "100vh",
           overflow: "auto",
         }}
-      >
+      > 
         {children}
       </Box>
     </Box>
