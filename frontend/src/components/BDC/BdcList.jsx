@@ -50,6 +50,8 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import ReceiptIcon from "@mui/icons-material/Receipt";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
+import BusinessIcon from "@mui/icons-material/Business";
+import PersonIcon from "@mui/icons-material/Person";
 import api, { viewBdcPdf, downloadBdcPdf } from "../../api/api";
 
 // Animations
@@ -701,6 +703,7 @@ export const BdcList = () => {
           const matchesSearch =
             d.number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             d.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            d.clientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             d.devisNumber?.toLowerCase().includes(searchTerm.toLowerCase());
           const dOnly = d.date ? String(d.date).slice(0, 10) : null;
           const matchesDateDebut = !dateDebut || (dOnly && dOnly >= dateDebut);
@@ -735,6 +738,8 @@ export const BdcList = () => {
         ...newBdc,
         amount: parseFloat(newBdc.amount) || 0,
         devisNumber: selectedDevis?.number || "",
+        clientName: selectedDevis?.clientName || "",
+        clientType: selectedDevis?.clientType || "client",
       };
       const response = await api.post("/bdc", data);
 
@@ -807,6 +812,8 @@ export const BdcList = () => {
         ...editFormData,
         amount: parseFloat(editFormData.amount) || 0,
         devisNumber: selectedDevis?.number || "",
+        clientName: selectedDevis?.clientName || "",
+        clientType: selectedDevis?.clientType || "client",
       };
       await api.put(`/bdc/${editingBdc.id}`, data);
 
@@ -1006,6 +1013,7 @@ export const BdcList = () => {
               <TableRow>
                 <TableCell sx={{ fontWeight: 700 }}>Numéro</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Devis source</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Client / Société</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Date</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Description</TableCell>
                 <TableCell sx={{ fontWeight: 700 }} align="right">
@@ -1020,7 +1028,7 @@ export const BdcList = () => {
             <TableBody>
               {paginatedBdc.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
+                  <TableCell colSpan={8} align="center" sx={{ py: 8 }}>
                     <ReceiptIcon
                       sx={{ fontSize: 60, color: "grey.300", mb: 2 }}
                     />
@@ -1052,6 +1060,18 @@ export const BdcList = () => {
                       >
                         <DescriptionIcon fontSize="small" color="action" />
                         {d.devisNumber || d.devis?.number || "-"}
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
+                        {d.clientType === "society" ? (
+                          <BusinessIcon fontSize="small" color="action" />
+                        ) : (
+                          <PersonIcon fontSize="small" color="action" />
+                        )}
+                        {d.clientName || "-"}
                       </Box>
                     </TableCell>
                     <TableCell>
