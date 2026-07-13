@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import { AppProvider, useAppContext } from "./context/AppContext";
+import { SplashScreen } from "./components/Layout/SplashScreen";
 import { ThemeProvider, createTheme } from "@mui/material";
 import CssBaseline from "@mui/material/CssBaseline";
 import "./index.css";
@@ -43,13 +44,13 @@ const getTheme = (mode) =>
   });
 
 const ThemedApp = () => {
-  const { darkMode } = useAppContext();
+  const { darkMode, initialLoading } = useAppContext();
   const theme = useMemo(() => getTheme(darkMode ? "dark" : "light"), [darkMode]);
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <App />
+      {initialLoading ? <SplashScreen /> : <App />}
     </ThemeProvider>
   );
 };
