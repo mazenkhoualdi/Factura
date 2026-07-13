@@ -24,7 +24,6 @@ export const AppProvider = ({ children }) => {
   const [factures, setFactures] = useState([]);
   const [facturesAchats, setFacturesAchats] = useState([]);
   const [paiements, setPaiements] = useState([]);
-  const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const loadClients = async () => {
@@ -110,15 +109,6 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  const loadNotifications = async () => {
-    try {
-      const response = await api.get("/notifications");
-      setNotifications(response.data || []);
-    } catch (error) {
-      console.error("Erreur chargement notifications", error);
-    }
-  };
-
   const loadAllData = async () => {
     await Promise.all([
       loadClients(),
@@ -130,12 +120,35 @@ export const AppProvider = ({ children }) => {
       loadFactures(),
       loadFacturesAchats(),
       loadPaiements(),
-      loadNotifications(),
     ]);
   };
 
+  // Chargement initial des données
   useEffect(() => {
     loadAllData();
+  }, []);
+
+  // Rafraîchissement automatique de toutes les données pour assurer
+  // la cohérence entre les pages (polling silencieux, sans écran de chargement)
+  const AUTO_REFRESH_INTERVAL_MS = 15000; // 15 secondes
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      loadAllData();
+    }, AUTO_REFRESH_INTERVAL_MS);
+
+    // Rafraîchir aussi dès que l'onglet redevient actif/visible
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        loadAllData();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, []);
 
   useEffect(() => {
@@ -161,7 +174,6 @@ export const AppProvider = ({ children }) => {
     factures,
     facturesAchats,
     paiements,
-    notifications,
     loading,
     loadClients,
     loadSocieties, // <-- AJOUT
@@ -172,7 +184,6 @@ export const AppProvider = ({ children }) => {
     loadFactures,
     loadFacturesAchats,
     loadPaiements,
-    loadNotifications,
     loadAllData,
   };
 
