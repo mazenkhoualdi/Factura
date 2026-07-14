@@ -77,7 +77,8 @@ const AnimatedLinearProgress = styled(LinearProgress)(({ value, theme }) => ({
       left: 0,
       right: 0,
       bottom: 0,
-      background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)",
+      background:
+        "linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)",
       animation: "shimmer 2s infinite",
     },
   },
@@ -114,7 +115,11 @@ const SectionTitle = ({ icon, title, color = "primary" }) => {
       }}
     >
       {icon}
-      <Typography variant="subtitle1" fontWeight={700} sx={{ color: selectedColor }}>
+      <Typography
+        variant="subtitle1"
+        fontWeight={700}
+        sx={{ color: selectedColor }}
+      >
         {title}
       </Typography>
     </Box>
@@ -158,15 +163,17 @@ const KpiCard = ({ label, value, icon, color, trend, delay }) => {
           },
         }}
       >
-        <CardContent sx={{
-          p: 1.5,
-          "&:last-child": { pb: 1.5 },
-          textAlign: "center",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          height: "100%",
-        }}>
+        <CardContent
+          sx={{
+            p: 1.5,
+            "&:last-child": { pb: 1.5 },
+            textAlign: "center",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            height: "100%",
+          }}
+        >
           <Box
             sx={{
               display: "flex",
@@ -189,7 +196,7 @@ const KpiCard = ({ label, value, icon, color, trend, delay }) => {
                   alignItems: "center",
                   justifyContent: "center",
                   "& svg": {
-                    fontSize: "1.2rem"
+                    fontSize: "1.2rem",
                   },
                   transition: "all 0.3s ease",
                   "&:hover": {
@@ -231,9 +238,19 @@ const KpiCard = ({ label, value, icon, color, trend, delay }) => {
             </Typography>
 
             {trend && (
-              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.5 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.5,
+                  mt: 0.5,
+                }}
+              >
                 {trend.icon}
-                <Typography variant="caption" sx={{ color: trend.color, fontWeight: 600 }}>
+                <Typography
+                  variant="caption"
+                  sx={{ color: trend.color, fontWeight: 600 }}
+                >
                   {trend.label}
                 </Typography>
               </Box>
@@ -261,7 +278,10 @@ const getPreviousMonthKey = (monthKey) => {
 const formatMonthLabel = (monthKey) => {
   const [year, month] = monthKey.split("-").map(Number);
   const d = new Date(year, month - 1, 1);
-  const label = d.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+  const label = d.toLocaleDateString("fr-FR", {
+    month: "long",
+    year: "numeric",
+  });
   return label.charAt(0).toUpperCase() + label.slice(1);
 };
 
@@ -274,7 +294,9 @@ const GainObjectifCard = ({ factures }) => {
   const [inputValue, setInputValue] = React.useState("");
   const [error, setError] = React.useState("");
   const [saving, setSaving] = React.useState(false);
-  const [selectedMonth, setSelectedMonth] = React.useState(() => toMonthKey(new Date()));
+  const [selectedMonth, setSelectedMonth] = React.useState(() =>
+    toMonthKey(new Date()),
+  );
 
   const totalGainAchats = React.useMemo(() => {
     return factures
@@ -295,20 +317,30 @@ const GainObjectifCard = ({ factures }) => {
 
   const { trendDirection, trendPercent } = React.useMemo(() => {
     if (previousMonthGain !== 0) {
-      const percent = ((totalGainAchats - previousMonthGain) / Math.abs(previousMonthGain)) * 100;
+      const percent =
+        ((totalGainAchats - previousMonthGain) / Math.abs(previousMonthGain)) *
+        100;
       return {
         trendPercent: percent,
-        trendDirection: percent > 0.01 ? "up" : percent < -0.01 ? "down" : "flat",
+        trendDirection:
+          percent > 0.01 ? "up" : percent < -0.01 ? "down" : "flat",
       };
     }
     if (totalGainAchats !== 0) {
-      return { trendPercent: null, trendDirection: totalGainAchats > 0 ? "up" : "down" };
+      return {
+        trendPercent: null,
+        trendDirection: totalGainAchats > 0 ? "up" : "down",
+      };
     }
     return { trendPercent: 0, trendDirection: "flat" };
   }, [totalGainAchats, previousMonthGain]);
 
   const trendColor =
-    trendDirection === "up" ? "#2e7d32" : trendDirection === "down" ? "#d32f2f" : "#757575";
+    trendDirection === "up"
+      ? "#2e7d32"
+      : trendDirection === "down"
+        ? "#d32f2f"
+        : "#757575";
   const TrendIcon =
     trendDirection === "up"
       ? TrendingUpRoundedIcon
@@ -345,7 +377,9 @@ const GainObjectifCard = ({ factures }) => {
         if (active) setLoading(false);
       }
     })();
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [selectedMonth]);
 
   const handleStartEdit = () => {
@@ -381,11 +415,13 @@ const GainObjectifCard = ({ factures }) => {
     }
   };
 
-  const percentage = objectif && objectif > 0
-    ? Math.round((totalGainAchats / objectif) * 100)
-    : 0;
+  const percentage =
+    objectif && objectif > 0
+      ? Math.round((totalGainAchats / objectif) * 100)
+      : 0;
 
-  const progressColor = percentage >= 80 ? "#2e7d32" : percentage >= 50 ? "#ed6c02" : "#7b1fa2";
+  const progressColor =
+    percentage >= 80 ? "#2e7d32" : percentage >= 50 ? "#ed6c02" : "#7b1fa2";
 
   return (
     <Fade in timeout={500}>
@@ -437,7 +473,11 @@ const GainObjectifCard = ({ factures }) => {
             }}
           >
             <TrackChangesRoundedIcon sx={{ color: "#7b1fa2", fontSize: 20 }} />
-            <Typography variant="subtitle1" fontWeight={700} sx={{ color: "#7b1fa2" }}>
+            <Typography
+              variant="subtitle1"
+              fontWeight={700}
+              sx={{ color: "#7b1fa2" }}
+            >
               Objectif gain achats
             </Typography>
           </Box>
@@ -447,7 +487,9 @@ const GainObjectifCard = ({ factures }) => {
               size="small"
               type="month"
               value={selectedMonth}
-              onChange={(e) => e.target.value && setSelectedMonth(e.target.value)}
+              onChange={(e) =>
+                e.target.value && setSelectedMonth(e.target.value)
+              }
               sx={{
                 "& .MuiOutlinedInput-root": {
                   borderRadius: 50,
@@ -462,12 +504,22 @@ const GainObjectifCard = ({ factures }) => {
                   },
                 },
               }}
-              inputProps={{ style: { textAlign: "center", padding: "4px 10px" } }}
+              inputProps={{
+                style: { textAlign: "center", padding: "4px 10px" },
+              }}
             />
           </Box>
 
           {loading ? (
-            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 2, py: 4 }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 2,
+                py: 4,
+              }}
+            >
               <CircularProgress size={24} sx={{ color: "#7b1fa2" }} />
               <Typography color="text.secondary">Chargement...</Typography>
             </Box>
@@ -498,7 +550,12 @@ const GainObjectifCard = ({ factures }) => {
               {editing ? (
                 <Fade in timeout={300}>
                   <Box sx={{ px: 1 }}>
-                    <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 2 }}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      align="center"
+                      sx={{ mb: 2 }}
+                    >
                       Définissez votre objectif de gain total sur les achats
                     </Typography>
                     <TextField
@@ -509,7 +566,9 @@ const GainObjectifCard = ({ factures }) => {
                       placeholder="Ex: 2000"
                       value={inputValue}
                       onChange={(e) => setInputValue(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === "Enter") handleSaveObjectif(); }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleSaveObjectif();
+                      }}
                       error={!!error}
                       helperText={error || " "}
                       inputProps={{ min: 0, step: "0.01" }}
@@ -520,16 +579,35 @@ const GainObjectifCard = ({ factures }) => {
                         },
                       }}
                     />
-                    <Box sx={{ display: "flex", gap: 1, justifyContent: "center", mt: 1 }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        gap: 1,
+                        justifyContent: "center",
+                        mt: 1,
+                      }}
+                    >
                       <Button
                         variant="contained"
                         size="small"
-                        startIcon={saving ? <CircularProgress size={16} sx={{ color: "#fff" }} /> : <CheckRoundedIcon />}
+                        startIcon={
+                          saving ? (
+                            <CircularProgress
+                              size={16}
+                              sx={{ color: "#fff" }}
+                            />
+                          ) : (
+                            <CheckRoundedIcon />
+                          )
+                        }
                         onClick={handleSaveObjectif}
                         disabled={saving}
                         sx={{
                           bgcolor: "#7b1fa2",
-                          "&:hover": { bgcolor: "#6a1b9a", transform: "scale(1.02)" },
+                          "&:hover": {
+                            bgcolor: "#6a1b9a",
+                            transform: "scale(1.02)",
+                          },
                           transition: "all 0.3s ease",
                         }}
                       >
@@ -570,10 +648,18 @@ const GainObjectifCard = ({ factures }) => {
                         borderRadius: 2,
                       }}
                     >
-                      Gain de <strong style={{ color: "#7b1fa2" }}>{formatMonthLabel(selectedMonth)}</strong> :{" "}
-                      <strong style={{ color: "#7b1fa2" }}>{totalGainAchats.toFixed(2)} DT</strong> réalisés sur
-                      l'objectif de{" "}
-                      <strong style={{ color: "#7b1fa2" }}>{objectif.toFixed(2)} DT</strong>
+                      Gain de{" "}
+                      <strong style={{ color: "#7b1fa2" }}>
+                        {formatMonthLabel(selectedMonth)}
+                      </strong>{" "}
+                      :{" "}
+                      <strong style={{ color: "#7b1fa2" }}>
+                        {totalGainAchats.toFixed(2)} DT
+                      </strong>{" "}
+                      réalisés sur l'objectif de{" "}
+                      <strong style={{ color: "#7b1fa2" }}>
+                        {objectif.toFixed(2)} DT
+                      </strong>
                     </Typography>
 
                     <Typography
@@ -595,9 +681,19 @@ const GainObjectifCard = ({ factures }) => {
                       value={Math.min(Math.max(percentage, 0), 100)}
                     />
 
-                    <Box sx={{ display: "flex", justifyContent: "center", mt: 1.5 }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "center",
+                        mt: 1.5,
+                      }}
+                    >
                       <Chip
-                        icon={<TrendIcon sx={{ color: `${trendColor} !important` }} />}
+                        icon={
+                          <TrendIcon
+                            sx={{ color: `${trendColor} !important` }}
+                          />
+                        }
                         label={`${trendLabel} vs ${formatMonthLabel(previousMonthKey)}`}
                         size="small"
                         sx={{
@@ -623,7 +719,11 @@ const GainObjectifCard = ({ factures }) => {
                       }}
                     >
                       <Box>
-                        <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          fontWeight={600}
+                        >
                           Gain réalisé
                         </Typography>
                         <Typography fontWeight={700} sx={{ color: "#7b1fa2" }}>
@@ -631,7 +731,11 @@ const GainObjectifCard = ({ factures }) => {
                         </Typography>
                       </Box>
                       <Box sx={{ textAlign: "right" }}>
-                        <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          fontWeight={600}
+                        >
                           Objectif
                         </Typography>
                         <Typography fontWeight={700} color="primary">
@@ -653,38 +757,94 @@ const GainObjectifCard = ({ factures }) => {
 // Dashboard principal amélioré
 export const Dashboard = () => {
   const theme = useTheme();
-  const { clients, devis, factures, paiements, loading } = useAppContext();
+  const { clients, societies, devis, factures, paiements, loading } =
+    useAppContext();
 
   const safeClients = Array.isArray(clients) ? clients : [];
+  const safeSocieties = Array.isArray(societies) ? societies : [];
   const safeDevis = Array.isArray(devis) ? devis : [];
   const safeFactures = Array.isArray(factures) ? factures : [];
   const safePaiements = Array.isArray(paiements) ? paiements : [];
 
-  const totalFactured = safeFactures.reduce((sum, f) => sum + (f.amount || 0), 0);
+  const totalFactured = safeFactures.reduce(
+    (sum, f) => sum + (f.amount || 0),
+    0,
+  );
   const totalPaid = safePaiements.reduce((sum, p) => sum + (p.amount || 0), 0);
   const totalRemaining = totalFactured - totalPaid;
-  const totalGainAchats = safeFactures.reduce((sum, f) => sum + (f.gain || 0), 0);
-  const encaissementPercentage = totalFactured > 0 ? Math.round((totalPaid / totalFactured) * 100) : 0;
+  const totalGainAchats = safeFactures.reduce(
+    (sum, f) => sum + (f.gain || 0),
+    0,
+  );
+  const encaissementPercentage =
+    totalFactured > 0 ? Math.round((totalPaid / totalFactured) * 100) : 0;
 
   const activityKpis = [
-    { label: "Clients", value: safeClients.length, icon: <PeopleIcon />, color: "#1976d2", delay: 0 },
-    { label: "Devis", value: safeDevis.length, icon: <DescriptionIcon />, color: "#ed6c02", delay: 100 },
-    { label: "Factures", value: safeFactures.length, icon: <ReceiptLongIcon />, color: "#9c27b0", delay: 200 },
-    { label: "En cours", value: safeDevis.filter((d) => d.status === "pending").length, icon: <PendingIcon />, color: "#607d8b", delay: 300 },
+    {
+      label: "Nombre de clients",
+      value: safeClients.length + safeSocieties.length,
+      icon: <PeopleIcon />,
+      color: "#1976d2",
+      delay: 0,
+    },
+    {
+      label: "Devis",
+      value: safeDevis.length,
+      icon: <DescriptionIcon />,
+      color: "#ed6c02",
+      delay: 100,
+    },
+    {
+      label: "Factures",
+      value: safeFactures.length,
+      icon: <ReceiptLongIcon />,
+      color: "#9c27b0",
+      delay: 200,
+    },
+    {
+      label: "En cours",
+      value: safeDevis.filter((d) => d.status === "pending").length,
+      icon: <PendingIcon />,
+      color: "#607d8b",
+      delay: 300,
+    },
   ];
 
   const financialKpis = [
-    { label: "Total facturé", value: `${totalFactured.toFixed(2)} DT`, icon: <EuroIcon />, color: "#1976d2", delay: 0 },
-    { label: "Total encaissé", value: `${totalPaid.toFixed(2)} DT`, icon: <PaymentsIcon />, color: "#2e7d32", delay: 100 },
-    { label: "Reste à encaisser", value: `${totalRemaining.toFixed(2)} DT`, icon: <MoneyOffIcon />, color: "#d32f2f", delay: 200 },
-    { label: "Gain total", value: `${totalGainAchats.toFixed(2)} DT`, icon: <SavingsIcon />, color: totalGainAchats >= 0 ? "#2e7d32" : "#d32f2f", delay: 300 },
+    {
+      label: "Total facturé",
+      value: `${totalFactured.toFixed(2)} DT`,
+      icon: <EuroIcon />,
+      color: "#1976d2",
+      delay: 0,
+    },
+    {
+      label: "Total encaissé",
+      value: `${totalPaid.toFixed(2)} DT`,
+      icon: <PaymentsIcon />,
+      color: "#2e7d32",
+      delay: 100,
+    },
+    {
+      label: "Reste à encaisser",
+      value: `${totalRemaining.toFixed(2)} DT`,
+      icon: <MoneyOffIcon />,
+      color: "#d32f2f",
+      delay: 200,
+    },
+    {
+      label: "Gain total",
+      value: `${totalGainAchats.toFixed(2)} DT`,
+      icon: <SavingsIcon />,
+      color: totalGainAchats >= 0 ? "#2e7d32" : "#d32f2f",
+      delay: 300,
+    },
   ];
 
   const STATUS_COLORS = {
     accepted: "#4caf50",
     pending: "#ff9800",
     refused: "#f44336",
-    validated: "#2196f3",
   };
 
   const STATUS_LABELS = {
@@ -702,7 +862,12 @@ export const Dashboard = () => {
     }))
     .filter((entry) => entry.value > 0);
 
-  const progressColor = encaissementPercentage >= 80 ? "#2e7d32" : encaissementPercentage >= 50 ? "#ed6c02" : "#d32f2f";
+  const progressColor =
+    encaissementPercentage >= 80
+      ? "#2e7d32"
+      : encaissementPercentage >= 50
+        ? "#ed6c02"
+        : "#d32f2f";
 
   if (loading) {
     return (
@@ -775,14 +940,25 @@ export const Dashboard = () => {
               lineHeight: 1.8,
             }}
           >
-            Bienvenue sur <strong style={{ color: theme.palette.primary.main }}>Factura</strong>.
-            Gérez efficacement vos clients, devis, factures et paiements depuis une interface centralisée.
+            Bienvenue sur{" "}
+            <strong style={{ color: theme.palette.primary.main }}>
+              Factura
+            </strong>
+            . Gérez efficacement vos clients, devis, factures et paiements
+            depuis une interface centralisée.
           </Typography>
         </Box>
       </Fade>
 
       {/* Section Performance commerciale */}
-      <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 3 }}>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          mb: 3,
+        }}
+      >
         <SectionTitle
           icon={<TrendingUpRoundedIcon color="primary" fontSize="small" />}
           title="Performance commerciale"
@@ -809,7 +985,15 @@ export const Dashboard = () => {
       </Box>
 
       {/* Section Aperçu financier */}
-      <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mt: 6, mb: 3 }}>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          mt: 6,
+          mb: 3,
+        }}
+      >
         <SectionTitle
           icon={<EuroIcon color="success" fontSize="small" />}
           title="Aperçu financier"
@@ -837,7 +1021,16 @@ export const Dashboard = () => {
       </Box>
 
       {/* Section Performance financière - Jauges (pleine largeur, en dessous) */}
-      <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mt: 6, mb: 3,mr:10 }}>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          mt: 6,
+          mb: 3,
+          mr: 10,
+        }}
+      >
         <SectionTitle
           icon={<BarChartRoundedIcon color="warning" fontSize="small" />}
           title="Performance financière"
@@ -884,7 +1077,11 @@ export const Dashboard = () => {
                   }}
                 >
                   <TrendingUpRoundedIcon color="success" fontSize="small" />
-                  <Typography variant="subtitle1" fontWeight={700} color="success.main">
+                  <Typography
+                    variant="subtitle1"
+                    fontWeight={700}
+                    color="success.main"
+                  >
                     Taux d'encaissement
                   </Typography>
                 </Box>
@@ -901,8 +1098,14 @@ export const Dashboard = () => {
                     borderRadius: 2,
                   }}
                 >
-                  <strong style={{ color: theme.palette.success.main }}>{totalPaid.toFixed(2)} DT</strong> encaissés sur{" "}
-                  <strong style={{ color: theme.palette.primary.main }}>{totalFactured.toFixed(2)} DT</strong> facturés
+                  <strong style={{ color: theme.palette.success.main }}>
+                    {totalPaid.toFixed(2)} DT
+                  </strong>{" "}
+                  encaissés sur{" "}
+                  <strong style={{ color: theme.palette.primary.main }}>
+                    {totalFactured.toFixed(2)} DT
+                  </strong>{" "}
+                  facturés
                 </Typography>
 
                 <Typography
@@ -934,7 +1137,11 @@ export const Dashboard = () => {
                   }}
                 >
                   <Box>
-                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      fontWeight={600}
+                    >
                       Encaissé
                     </Typography>
                     <Typography fontWeight={700} color="success.main">
@@ -942,7 +1149,11 @@ export const Dashboard = () => {
                     </Typography>
                   </Box>
                   <Box sx={{ textAlign: "right" }}>
-                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      fontWeight={600}
+                    >
                       Facturé
                     </Typography>
                     <Typography fontWeight={700} color="primary">
@@ -961,7 +1172,16 @@ export const Dashboard = () => {
       </Grid>
 
       {/* Section Visualisations financières */}
-      <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mt: 6, mb: 3 ,mr:10,}}>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          mt: 6,
+          mb: 3,
+          mr: 10,
+        }}
+      >
         <SectionTitle
           icon={<PieChartRoundedIcon color="info" fontSize="small" />}
           title="Visualisations financières"
@@ -1004,16 +1224,33 @@ export const Dashboard = () => {
                   }}
                 >
                   <PieChartRoundedIcon color="primary" fontSize="small" />
-                  <Typography variant="subtitle1" fontWeight={700} color="primary.main">
+                  <Typography
+                    variant="subtitle1"
+                    fontWeight={700}
+                    color="primary.main"
+                  >
                     Répartition des devis
                   </Typography>
                 </Box>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 3, mt: 1 }}>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 3, mt: 1 }}
+                >
                   Visualisez la répartition de vos devis selon leur statut.
                 </Typography>
                 {devisStatusData.length === 0 ? (
-                  <Box sx={{ height: 280, display: "flex", justifyContent: "center", alignItems: "center" }}>
-                    <Typography color="text.secondary">Aucun devis disponible</Typography>
+                  <Box
+                    sx={{
+                      height: 280,
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Typography color="text.secondary">
+                      Aucun devis disponible
+                    </Typography>
                   </Box>
                 ) : (
                   <ResponsiveContainer width="100%" height={320}>
@@ -1027,12 +1264,17 @@ export const Dashboard = () => {
                         innerRadius={55}
                         outerRadius={95}
                         paddingAngle={4}
-                        label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+                        label={({ percent }) =>
+                          `${(percent * 100).toFixed(0)}%`
+                        }
                         animationDuration={800}
                         animationBegin={200}
                       >
                         {devisStatusData.map((entry) => (
-                          <Cell key={entry.status} fill={STATUS_COLORS[entry.status]} />
+                          <Cell
+                            key={entry.status}
+                            fill={STATUS_COLORS[entry.status]}
+                          />
                         ))}
                       </Pie>
                       <RechartsTooltip
@@ -1093,12 +1335,21 @@ export const Dashboard = () => {
                   }}
                 >
                   <BarChartRoundedIcon color="success" fontSize="small" />
-                  <Typography variant="subtitle1" fontWeight={700} color="success.main">
+                  <Typography
+                    variant="subtitle1"
+                    fontWeight={700}
+                    color="success.main"
+                  >
                     Comparaison financière
                   </Typography>
                 </Box>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 3, mt: 1 }}>
-                  Comparez les montants facturés, encaissés et restant à percevoir.
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 3, mt: 1 }}
+                >
+                  Comparez les montants facturés, encaissés et restant à
+                  percevoir.
                 </Typography>
                 <ResponsiveContainer width="100%" height={320}>
                   <BarChart
@@ -1108,7 +1359,11 @@ export const Dashboard = () => {
                       { name: "Reste", value: totalRemaining },
                     ]}
                   >
-                    <CartesianGrid strokeDasharray="4 4" vertical={false} strokeOpacity={0.3} />
+                    <CartesianGrid
+                      strokeDasharray="4 4"
+                      vertical={false}
+                      strokeOpacity={0.3}
+                    />
                     <XAxis dataKey="name" />
                     <YAxis />
                     <RechartsTooltip
