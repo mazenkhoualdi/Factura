@@ -6,40 +6,84 @@ import webbrowser
 import threading
 import signal
 
+# Détermine le dossier racine du projet (celui qui contient backend/ et
+# frontend/), quel que soit l'endroit d'où le .exe est lancé.
+if getattr(sys, "frozen", False):
+    # Exécutable généré par PyInstaller : sys.executable pointe vers le .exe
+    EXE_DIR = os.path.dirname(os.path.abspath(sys.executable))
+else:
+    # Exécution via "python launcher.py"
+    EXE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+def find_project_root(start_dir, max_levels=5):
+    """Remonte l'arborescence à partir de start_dir jusqu'à trouver un
+    dossier contenant à la fois "backend" et "frontend". Cela rend le
+    launcher indépendant de l'endroit exact où PyInstaller a déposé le
+    .exe (dist/, launcher/, racine du projet, etc.)."""
+    current = os.path.abspath(start_dir)
+    for _ in range(max_levels):
+        if os.path.isdir(os.path.join(current, "backend")) and os.path.isdir(os.path.join(current, "frontend")):
+            return current
+        parent = os.path.dirname(current)
+        if parent == current:
+            break
+        current = parent
+    # Repli : comportement d'origine (un niveau au-dessus de l'exe)
+    return os.path.abspath(os.path.join(start_dir, ".."))
+
+PROJECT_ROOT = find_project_root(EXE_DIR)
+BACKEND_DIR = os.path.join(PROJECT_ROOT, "backend")
+FRONTEND_DIR = os.path.join(PROJECT_ROOT, "frontend")
+
+# mvn/npm sont des scripts .cmd sous Windows ; shell=True permet de les
+# retrouver correctement dans le PATH sans dépendre du répertoire courant.
+IS_WINDOWS = os.name == "nt"
+
 def run_backend():
     """Lance le backend Spring Boot"""
-    os.chdir('backend')
-    print("🚀 Démarrage du backend Spring Boot...")
+    print(f"🚀 Démarrage du backend Spring Boot... ({BACKEND_DIR})")
+    if not os.path.isdir(BACKEND_DIR):
+        print(f"❌ Dossier backend introuvable : {BACKEND_DIR}")
+        return
     # En mode développement: mvn spring-boot:run
     # En production: java -jar target/backend-0.0.1-SNAPSHOT.jar
-    process = subprocess.Popen(['mvn', 'spring-boot:run'], 
-                               stdout=subprocess.PIPE, 
-                               stderr=subprocess.PIPE,
-                               text=True)
+    process = subprocess.Popen(
+        "mvn spring-boot:run",
+        cwd=BACKEND_DIR,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        shell=IS_WINDOWS,
+    )
     for line in process.stdout:
         print(f"[BACKEND] {line.strip()}")
         if "Started FacturaApplication" in line:
             print("✅ Backend démarré sur http://localhost:8080")
-    os.chdir('..')
 
 def run_frontend():
     """Lance le frontend React"""
-    os.chdir('frontend')
-    print("🚀 Démarrage du frontend React...")
-    process = subprocess.Popen(['npm', 'run', 'dev', '--', '--host'], 
-                               stdout=subprocess.PIPE, 
-                               stderr=subprocess.PIPE,
-                               text=True)
+    print(f"🚀 Démarrage du frontend React... ({FRONTEND_DIR})")
+    if not os.path.isdir(FRONTEND_DIR):
+        print(f"❌ Dossier frontend introuvable : {FRONTEND_DIR}")
+        return
+    process = subprocess.Popen(
+        "npm run dev -- --host",
+        cwd=FRONTEND_DIR,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        shell=IS_WINDOWS,
+    )
     for line in process.stdout:
         print(f"[FRONTEND] {line.strip()}")
         if "Local:" in line or "Network:" in line:
             print("✅ Frontend démarré")
-    os.chdir('..')
 
 if __name__ == "__main__":
     print("=" * 50)
     print("📊 FACTURA - Application de traçabilité commerciale")
     print("=" * 50)
+    print(f"📁 Racine du projet détectée : {PROJECT_ROOT}")
     
     # Démarrer le backend en arrière-plan
     backend_thread = threading.Thread(target=run_backend)
