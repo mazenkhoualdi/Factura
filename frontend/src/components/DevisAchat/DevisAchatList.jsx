@@ -51,10 +51,7 @@ import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import BusinessIcon from "@mui/icons-material/Business";
-import api, {
-  viewDevisAchatPdf,
-  downloadDevisAchatPdf,
-} from "../../api/api";
+import api, { viewDevisAchatPdf, downloadDevisAchatPdf } from "../../api/api";
 
 // Animations
 const Transition = React.forwardRef(function Transition(props, ref) {
@@ -66,7 +63,6 @@ const STATUS_CONFIG = {
   pending: { label: "En attente", color: "#ff9800", bg: "#fff3e0" },
   accepted: { label: "Accepté", color: "#4caf50", bg: "#e8f5e9" },
   refused: { label: "Refusé", color: "#f44336", bg: "#fce4ec" },
-  validated: { label: "Validé", color: "#2196f3", bg: "#e3f2fd" },
 };
 
 const getStatusLabel = (status) => STATUS_CONFIG[status]?.label || status;
@@ -100,8 +96,9 @@ const FilterSection = ({
   const [showFilters, setShowFilters] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
-  const activeFiltersCount = [searchTerm, dateDebut, dateFin].filter(Boolean)
-    .length;
+  const activeFiltersCount = [searchTerm, dateDebut, dateFin].filter(
+    Boolean,
+  ).length;
 
   return (
     <Paper
@@ -126,8 +123,7 @@ const FilterSection = ({
               left: 0,
               right: 0,
               height: "3px",
-              background:
-                "linear-gradient(90deg, #1976d2, #42a5f5, #1976d2)",
+              background: "linear-gradient(90deg, #1976d2, #42a5f5, #1976d2)",
               backgroundSize: "200% 100%",
               animation: "gradient 3s ease infinite",
             }
@@ -242,8 +238,7 @@ const FilterSection = ({
                 borderRadius: 2,
                 fontWeight: 600,
                 px: 3,
-                background:
-                  "linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)",
+                background: "linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)",
                 boxShadow: "0 4px 15px rgba(25, 118, 210, 0.3)",
                 transition: "all 0.3s ease",
                 "&:hover": {
@@ -501,7 +496,7 @@ const FilterSection = ({
                 <Typography
                   variant="caption"
                   color="text.secondary"
-                  sx={{ fontWeight: 600 }}
+                  sx={{ fontWeight: 600, mt: 0.35 }}
                 >
                   Filtres actifs :
                 </Typography>
@@ -519,7 +514,7 @@ const FilterSection = ({
                 {dateDebut && (
                   <Chip
                     label={`Du: ${new Date(dateDebut).toLocaleDateString(
-                      "fr-FR"
+                      "fr-FR",
                     )}`}
                     size="small"
                     onDelete={() => setDateDebut("")}
@@ -532,7 +527,7 @@ const FilterSection = ({
                 {dateFin && (
                   <Chip
                     label={`Au: ${new Date(dateFin).toLocaleDateString(
-                      "fr-FR"
+                      "fr-FR",
                     )}`}
                     size="small"
                     onDelete={() => setDateFin("")}
@@ -696,7 +691,7 @@ export const DevisAchatList = () => {
   const paginatedDevisAchats = useMemo(() => {
     return filteredDevisAchats.slice(
       page * rowsPerPage,
-      page * rowsPerPage + rowsPerPage
+      page * rowsPerPage + rowsPerPage,
     );
   }, [filteredDevisAchats, page, rowsPerPage]);
 
@@ -782,7 +777,10 @@ export const DevisAchatList = () => {
       showSnackbar("✅ Devis d'achat modifié avec succès !");
     } catch (error) {
       console.error("Erreur modification devis achat", error);
-      showSnackbar("❌ Erreur lors de la modification du devis d'achat", "error");
+      showSnackbar(
+        "❌ Erreur lors de la modification du devis d'achat",
+        "error",
+      );
     } finally {
       setEditLoading(false);
     }
@@ -806,7 +804,10 @@ export const DevisAchatList = () => {
       showSnackbar("✅ Devis d'achat supprimé avec succès !");
     } catch (error) {
       console.error("Erreur suppression devis achat", error);
-      showSnackbar("❌ Erreur lors de la suppression du devis d'achat", "error");
+      showSnackbar(
+        "❌ Erreur lors de la suppression du devis d'achat",
+        "error",
+      );
     } finally {
       setDeleteLoading(false);
     }
@@ -839,7 +840,7 @@ export const DevisAchatList = () => {
         showSnackbar("❌ Erreur lors de l'ouverture du PDF", "error");
       }
     },
-    [showSnackbar]
+    [showSnackbar],
   );
 
   // ============================================================
@@ -863,7 +864,7 @@ export const DevisAchatList = () => {
         showSnackbar("❌ Erreur lors du téléchargement du PDF", "error");
       }
     },
-    [showSnackbar]
+    [showSnackbar],
   );
 
   // ============================================================
@@ -1508,7 +1509,9 @@ export const DevisAchatList = () => {
             onClick={handleEditDevisAchat}
             disabled={editLoading}
           >
-            {editLoading ? "Enregistrement..." : "Enregistrer les modifications"}
+            {editLoading
+              ? "Enregistrement..."
+              : "Enregistrer les modifications"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1579,7 +1582,9 @@ export const DevisAchatList = () => {
                 }}
               >
                 <Box>
-                  <Typography variant="h6">{selectedDevisAchat.number}</Typography>
+                  <Typography variant="h6">
+                    {selectedDevisAchat.number}
+                  </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Détails du devis d'achat
                   </Typography>
@@ -1597,7 +1602,11 @@ export const DevisAchatList = () => {
                     elevation={0}
                     sx={{ p: 2, bgcolor: "grey.50", borderRadius: 2 }}
                   >
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      gutterBottom
+                    >
                       <Box
                         component="span"
                         sx={{ display: "flex", alignItems: "center", gap: 1 }}
@@ -1612,7 +1621,11 @@ export const DevisAchatList = () => {
                   </Paper>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    gutterBottom
+                  >
                     <CalendarTodayIcon
                       fontSize="small"
                       sx={{ mr: 0.5, verticalAlign: "middle" }}
@@ -1628,13 +1641,17 @@ export const DevisAchatList = () => {
                             year: "numeric",
                             month: "long",
                             day: "numeric",
-                          }
+                          },
                         )
                       : ""}
                   </Typography>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    gutterBottom
+                  >
                     <CalendarTodayIcon
                       fontSize="small"
                       sx={{ mr: 0.5, verticalAlign: "middle" }}
@@ -1644,7 +1661,7 @@ export const DevisAchatList = () => {
                   <Typography variant="body1">
                     {selectedDevisAchat.expirationDate
                       ? new Date(
-                          selectedDevisAchat.expirationDate
+                          selectedDevisAchat.expirationDate,
                         ).toLocaleDateString("fr-FR", {
                           weekday: "long",
                           year: "numeric",
@@ -1656,7 +1673,11 @@ export const DevisAchatList = () => {
                 </Grid>
                 <Grid item xs={12}>
                   <Divider sx={{ my: 1 }} />
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    gutterBottom
+                  >
                     Description
                   </Typography>
                   <Typography variant="body1" paragraph>
@@ -1668,7 +1689,11 @@ export const DevisAchatList = () => {
                     elevation={0}
                     sx={{ p: 2, bgcolor: "primary.50", borderRadius: 2 }}
                   >
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      gutterBottom
+                    >
                       <AttachMoneyIcon
                         fontSize="small"
                         sx={{ mr: 0.5, verticalAlign: "middle" }}
@@ -1683,13 +1708,21 @@ export const DevisAchatList = () => {
                   </Paper>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    gutterBottom
+                  >
                     Statut
                   </Typography>
                   <StatusChip status={selectedDevisAchat.status} />
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    gutterBottom
+                  >
                     Commentaires
                   </Typography>
                   <Typography variant="body1">
@@ -1699,7 +1732,11 @@ export const DevisAchatList = () => {
                 {selectedDevisAchat.pdfUrl && (
                   <Grid item xs={12}>
                     <Divider sx={{ my: 1 }} />
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      gutterBottom
+                    >
                       Pièce jointe
                     </Typography>
                     <Button
@@ -1716,7 +1753,10 @@ export const DevisAchatList = () => {
               </Grid>
             </DialogContent>
             <DialogActions sx={{ p: 3, pt: 0 }}>
-              <Button onClick={() => setDetailDialogOpen(false)} variant="contained">
+              <Button
+                onClick={() => setDetailDialogOpen(false)}
+                variant="contained"
+              >
                 Fermer
               </Button>
             </DialogActions>
