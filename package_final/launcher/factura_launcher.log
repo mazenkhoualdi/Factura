@@ -1,0 +1,65 @@
+[2026-07-14 15:03:13] ==================================================
+[2026-07-14 15:03:13] 📊 FACTURA - Application de traçabilité commerciale
+[2026-07-14 15:03:13] ==================================================
+[2026-07-14 15:03:13] 📁 Racine du projet détectée : C:\Users\simazen\Downloads\factura_avec_splash_logo_kpi_modifie (2)\factura_avec_splash_logo (2)\factura\package_final
+[2026-07-14 15:03:13] 🚀 Démarrage du backend Spring Boot... (C:\Users\simazen\Downloads\factura_avec_splash_logo_kpi_modifie (2)\factura_avec_splash_logo (2)\factura\package_final\backend)
+[2026-07-14 15:03:13] 🚀 Démarrage du frontend React... (C:\Users\simazen\Downloads\factura_avec_splash_logo_kpi_modifie (2)\factura_avec_splash_logo (2)\factura\package_final\frontend)
+[2026-07-14 15:03:13] ▶️ java -jar C:\Users\simazen\Downloads\factura_avec_splash_logo_kpi_modifie (2)\factura_avec_splash_logo (2)\factura\package_final\backend\target\backend-0.0.1-SNAPSHOT.jar
+[2026-07-14 15:03:15] [FRONTEND] npm error code ENOENT
+[2026-07-14 15:03:15] [FRONTEND] npm error syscall open
+[2026-07-14 15:03:15] [FRONTEND] npm error path C:\Users\simazen\Downloads\factura_avec_splash_logo_kpi_modifie (2)\factura_avec_splash_logo (2)\factura\package_final\frontend\package.json
+[2026-07-14 15:03:15] [FRONTEND] npm error errno -4058
+[2026-07-14 15:03:15] [FRONTEND] npm error enoent Could not read package.json: Error: ENOENT: no such file or directory, open 'C:\Users\simazen\Downloads\factura_avec_splash_logo_kpi_modifie (2)\factura_avec_splash_logo (2)\factura\package_final\frontend\package.json'
+[2026-07-14 15:03:15] [FRONTEND] npm error enoent This is related to npm not being able to find a file.
+[2026-07-14 15:03:15] [FRONTEND] npm error enoent
+[2026-07-14 15:03:15] [FRONTEND] npm error A complete log of this run can be found in: C:\Users\simazen\AppData\Local\npm-cache\_logs\2026-07-14T14_03_14_902Z-debug-0.log
+[2026-07-14 15:03:15] [BACKEND] 
+[2026-07-14 15:03:15] [BACKEND] .   ____          _            __ _ _
+[2026-07-14 15:03:15] [BACKEND] /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+[2026-07-14 15:03:15] [BACKEND] ( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+[2026-07-14 15:03:15] [BACKEND] \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+[2026-07-14 15:03:15] [BACKEND] '  |____| .__|_| |_|_| |_\__, | / / / /
+[2026-07-14 15:03:15] [BACKEND] =========|_|==============|___/=/_/_/_/
+[2026-07-14 15:03:15] [BACKEND] :: Spring Boot ::                (v3.2.5)
+[2026-07-14 15:03:15] [BACKEND] 
+[2026-07-14 15:03:16] [BACKEND] 2026-07-14T15:03:16.117+01:00  INFO 11084 --- [           main] com.factura.FacturaApplication           : Starting FacturaApplication v0.0.1-SNAPSHOT using Java 17.0.19 with PID 11084 (C:\Users\simazen\Downloads\factura_avec_splash_logo_kpi_modifie (2)\factura_avec_splash_logo (2)\factura\package_final\backend\target\backend-0.0.1-SNAPSHOT.jar started by simazen in C:\Users\simazen\Downloads\factura_avec_splash_logo_kpi_modifie (2)\factura_avec_splash_logo (2)\factura\package_final\backend)
+[2026-07-14 15:03:16] [BACKEND] 2026-07-14T15:03:16.126+01:00  INFO 11084 --- [           main] com.factura.FacturaApplication           : No active profile set, falling back to 1 default profile: "default"
+[2026-07-14 15:03:18] [BACKEND] 2026-07-14T15:03:18.841+01:00  INFO 11084 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+[2026-07-14 15:03:19] [BACKEND] 2026-07-14T15:03:19.032+01:00  INFO 11084 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 173 ms. Found 11 JPA repository interfaces.
+[2026-07-14 15:03:20] [BACKEND] 2026-07-14T15:03:20.777+01:00  INFO 11084 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+[2026-07-14 15:03:20] [BACKEND] 2026-07-14T15:03:20.826+01:00  INFO 11084 --- [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+[2026-07-14 15:03:20] [BACKEND] 2026-07-14T15:03:20.826+01:00  INFO 11084 --- [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.20]
+[2026-07-14 15:03:20] [BACKEND] 2026-07-14T15:03:20.942+01:00  INFO 11084 --- [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+[2026-07-14 15:03:20] [BACKEND] 2026-07-14T15:03:20.942+01:00  INFO 11084 --- [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 4616 ms
+[2026-07-14 15:03:21] [BACKEND] 2026-07-14T15:03:21.313+01:00  INFO 11084 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+[2026-07-14 15:03:21] [BACKEND] 2026-07-14T15:03:21.540+01:00  INFO 11084 --- [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.4.4.Final
+[2026-07-14 15:03:21] [BACKEND] 2026-07-14T15:03:21.654+01:00  INFO 11084 --- [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+[2026-07-14 15:03:22] [BACKEND] 2026-07-14T15:03:22.414+01:00  INFO 11084 --- [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+[2026-07-14 15:03:22] [BACKEND] 2026-07-14T15:03:22.478+01:00  INFO 11084 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+[2026-07-14 15:03:22] [BACKEND] 2026-07-14T15:03:22.983+01:00  INFO 11084 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@7eee6c13
+[2026-07-14 15:03:22] [BACKEND] 2026-07-14T15:03:22.989+01:00  INFO 11084 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+[2026-07-14 15:03:23] [BACKEND] 2026-07-14T15:03:23.077+01:00  WARN 11084 --- [           main] org.hibernate.orm.deprecation            : HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+[2026-07-14 15:03:26] [BACKEND] 2026-07-14T15:03:26.479+01:00  INFO 11084 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+[2026-07-14 15:03:26] [BACKEND] 2026-07-14T15:03:26.874+01:00  INFO 11084 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+[2026-07-14 15:03:28] [BACKEND] 2026-07-14T15:03:28.333+01:00  WARN 11084 --- [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+[2026-07-14 15:03:29] [BACKEND] 2026-07-14T15:03:29.382+01:00  WARN 11084 --- [           main] ConfigServletWebServerApplicationContext : Exception encountered during context initialization - cancelling refresh attempt: org.springframework.context.ApplicationContextException: Failed to start bean 'webServerStartStop'
+[2026-07-14 15:03:29] [BACKEND] 2026-07-14T15:03:29.398+01:00  INFO 11084 --- [           main] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+[2026-07-14 15:03:29] [BACKEND] 2026-07-14T15:03:29.398+01:00  INFO 11084 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+[2026-07-14 15:03:29] [BACKEND] 2026-07-14T15:03:29.408+01:00  INFO 11084 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+[2026-07-14 15:03:29] [BACKEND] 2026-07-14T15:03:29.439+01:00  INFO 11084 --- [           main] .s.b.a.l.ConditionEvaluationReportLogger :
+[2026-07-14 15:03:29] [BACKEND] 
+[2026-07-14 15:03:29] [BACKEND] Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+[2026-07-14 15:03:29] [BACKEND] 2026-07-14T15:03:29.502+01:00 ERROR 11084 --- [           main] o.s.b.d.LoggingFailureAnalysisReporter   :
+[2026-07-14 15:03:29] [BACKEND] 
+[2026-07-14 15:03:29] [BACKEND] ***************************
+[2026-07-14 15:03:29] [BACKEND] APPLICATION FAILED TO START
+[2026-07-14 15:03:29] [BACKEND] ***************************
+[2026-07-14 15:03:29] [BACKEND] 
+[2026-07-14 15:03:29] [BACKEND] Description:
+[2026-07-14 15:03:29] [BACKEND] 
+[2026-07-14 15:03:29] [BACKEND] Web server failed to start. Port 8080 was already in use.
+[2026-07-14 15:03:29] [BACKEND] 
+[2026-07-14 15:03:29] [BACKEND] Action:
+[2026-07-14 15:03:29] [BACKEND] 
+[2026-07-14 15:03:29] [BACKEND] Identify and stop the process that's listening on port 8080 or configure this application to listen on another port.
+[2026-07-14 15:03:29] [BACKEND] 

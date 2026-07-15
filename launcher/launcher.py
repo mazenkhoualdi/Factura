@@ -1,0 +1,299 @@
+import subprocess
+import os
+import sys
+import time
+import webbrowser
+import threading
+import signal
+
+# Détermine le dossier racine du projet (celui qui contient backend/ et
+# frontend/), quel que soit l'endroit d'où le .exe est lancé.
+if getattr(sys, "frozen", False):
+    # Exécutable généré par PyInstaller : sys.executable pointe vers le .exe
+    EXE_DIR = os.path.dirname(os.path.abspath(sys.executable))
+else:
+    # Exécution via "python launcher.py"
+    EXE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def find_project_root(start_dir, max_levels=5):
+    """Remonte l'arborescence à partir de start_dir jusqu'à trouver un
+    dossier contenant à la fois "backend" et "frontend". Cela rend le
+    launcher indépendant de l'endroit exact où PyInstaller a déposé le
+    .exe (dist/, launcher/, racine du projet, etc.)."""
+    current = os.path.abspath(start_dir)
+    for _ in range(max_levels):
+        if os.path.isdir(os.path.join(current, "backend")) and os.path.isdir(os.path.join(current, "frontend")):
+            return current
+        parent = os.path.dirname(current)
+        if parent == current:
+            break
+        current = parent
+    # Repli : comportement d'origine (un niveau au-dessus de l'exe)
+    return os.path.abspath(os.path.join(start_dir, ".."))
+
+
+PROJECT_ROOT = find_project_root(EXE_DIR)
+BACKEND_DIR = os.path.join(PROJECT_ROOT, "backend")
+FRONTEND_DIR = os.path.join(PROJECT_ROOT, "frontend")
+
+# mvn/npm sont des scripts .cmd sous Windows ; shell=True permet de les
+# retrouver correctement dans le PATH sans dépendre du répertoire courant.
+IS_WINDOWS = os.name == "nt"
+
+# --------------------------------------------------------------------------
+# Logging : comme l'exe est compilé en mode --noconsole (pas de fenêtre CMD),
+# tous les print() sont redirigés vers un fichier log à côté de l'exe, pour
+# pouvoir diagnostiquer un problème si besoin.
+# --------------------------------------------------------------------------
+LOG_PATH = os.path.join(EXE_DIR, "factura_launcher.log")
+_log_file = open(LOG_PATH, "a", encoding="utf-8", buffering=1)
+
+
+def log(message):
+    timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+    line = f"[{timestamp}] {message}"
+    try:
+        print(line)
+    except Exception:
+        pass  # pas de console disponible en mode --noconsole
+    _log_file.write(line + "\n")
+
+
+# Flags pour empêcher les sous-processus (mvn, npm) d'ouvrir leur propre
+# fenêtre de console visible, en plus de l'absence de console de l'exe.
+POPEN_KWARGS = {}
+if IS_WINDOWS:
+    POPEN_KWARGS["creationflags"] = subprocess.CREATE_NO_WINDOW
+
+
+def find_chrome():
+    """Cherche l'exécutable Chrome de façon fiable, même depuis un Python
+    32-bit sur un Windows 64-bit (où %ProgramFiles% est redirigé vers
+    "Program Files (x86)" et ne permet donc pas de voir un Chrome 64-bit
+    installé dans le vrai "Program Files"). On interroge d'abord le
+    registre (App Paths), qui est la méthode fiable, puis on retombe sur
+    une liste de chemins classiques, y compris %ProgramW6432% qui donne
+    toujours le vrai "Program Files" 64-bit."""
+    # 1) Registre Windows : App Paths\chrome.exe (vue 64-bit ET 32-bit)
+    if IS_WINDOWS:
+        try:
+            import winreg
+            for view in (winreg.KEY_WOW64_64KEY, winreg.KEY_WOW64_32KEY):
+                try:
+                    key = winreg.OpenKey(
+                        winreg.HKEY_LOCAL_MACHINE,
+                        r"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe",
+                        0,
+                        winreg.KEY_READ | view,
+                    )
+                    path, _ = winreg.QueryValueEx(key, None)
+                    winreg.CloseKey(key)
+                    if path and os.path.isfile(path):
+                        return path
+                except OSError:
+                    continue
+        except ImportError:
+            pass
+
+    # 2) Repli : chemins classiques, avec ProgramW6432 pour contourner la
+    # redirection WOW64 d'un process 32-bit.
+    candidates = [
+        os.path.join(os.environ.get("ProgramW6432", r"C:\Program Files"), "Google\\Chrome\\Application\\chrome.exe"),
+        os.path.join(os.environ.get("PROGRAMFILES", r"C:\Program Files"), "Google\\Chrome\\Application\\chrome.exe"),
+        os.path.join(os.environ.get("PROGRAMFILES(X86)", r"C:\Program Files (x86)"),
+                     "Google\\Chrome\\Application\\chrome.exe"),
+        os.path.join(os.environ.get("LOCALAPPDATA", ""), "Google\\Chrome\\Application\\chrome.exe"),
+    ]
+    for path in candidates:
+        if path and os.path.isfile(path):
+            return path
+    return None
+
+
+def open_app_window(url):
+    """Ouvre l'URL dans une fenêtre Chrome "app" : pas de barre d'adresse,
+    pas d'onglets, juste le titre de la page (comme une application de
+    bureau, voir index.html -> <title>Factura</title>). Si Chrome n'est pas
+    trouvé, on retombe sur un onglet classique du navigateur par défaut."""
+    chrome_path = find_chrome()
+    if chrome_path:
+        subprocess.Popen(
+            [chrome_path, f"--app={url}", "--window-size=1366,768"],
+            **POPEN_KWARGS,
+        )
+    else:
+        log("⚠️ Chrome introuvable, ouverture dans le navigateur par défaut.")
+        webbrowser.open_new_tab(url)
+
+
+# Signalent quand le backend / frontend sont réellement prêts, pour ne plus
+# attendre un temps fixe "au cas où" mais le temps réel nécessaire.
+backend_ready = threading.Event()
+frontend_ready = threading.Event()
+
+
+def find_backend_jar():
+    """Cherche un jar exécutable déjà buildé dans backend/target
+    (on ignore les jars *-sources.jar et *.jar.original générés par
+    certains plugins)."""
+    target_dir = os.path.join(BACKEND_DIR, "target")
+    if not os.path.isdir(target_dir):
+        return None
+    for name in os.listdir(target_dir):
+        if name.endswith(".jar") and "sources" not in name:
+            return os.path.join(target_dir, name)
+    return None
+
+
+def build_backend_jar():
+    """Build le jar une seule fois (mvn clean package). Ne s'exécute que
+    si aucun jar n'existe déjà dans target/. C'est cette étape (compilation
+    + résolution des dépendances) qui prenait du temps à CHAQUE lancement
+    avec 'mvn spring-boot:run' ; ici elle n'a lieu qu'une fois."""
+    log("📦 Aucun jar trouvé, build du backend (mvn clean package -DskipTests)... "
+        "(unique, les prochains lancements seront rapides)")
+    result = subprocess.run(
+        "mvn clean package -DskipTests",
+        cwd=BACKEND_DIR,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        shell=IS_WINDOWS,
+        **POPEN_KWARGS,
+    )
+    for line in result.stdout.splitlines():
+        log(f"[BACKEND-BUILD] {line.strip()}")
+    if result.returncode != 0:
+        log("❌ Échec du build Maven, voir les lignes [BACKEND-BUILD] ci-dessus.")
+        return None
+    return find_backend_jar()
+
+
+def run_backend():
+    """Lance le backend Spring Boot à partir du jar compilé (mode
+    production). Le jar n'est buildé qu'une seule fois : au premier
+    lancement, puis réutilisé tel quel."""
+    log(f"🚀 Démarrage du backend Spring Boot... ({BACKEND_DIR})")
+    if not os.path.isdir(BACKEND_DIR):
+        log(f"❌ Dossier backend introuvable : {BACKEND_DIR}")
+        return
+
+    jar_path = find_backend_jar()
+    if jar_path is None:
+        jar_path = build_backend_jar()
+    if jar_path is None:
+        log("❌ Impossible de démarrer le backend : pas de jar disponible.")
+        return
+
+    log(f"▶️ java -jar {jar_path}")
+    process = subprocess.Popen(
+        f'java -jar "{jar_path}"',
+        cwd=BACKEND_DIR,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        shell=IS_WINDOWS,
+        **POPEN_KWARGS,
+    )
+    for line in process.stdout:
+        log(f"[BACKEND] {line.strip()}")
+        if "Started FacturaApplication" in line:
+            log("✅ Backend démarré sur http://localhost:8080")
+            backend_ready.set()
+
+
+def build_frontend_dist():
+    """Build le frontend une seule fois (npm run build). Ne s'exécute que
+    si le dossier dist/ n'existe pas déjà."""
+    log("📦 Aucun build trouvé, build du frontend (npm run build)... "
+        "(unique, les prochains lancements seront rapides)")
+    result = subprocess.run(
+        "npm run build",
+        cwd=FRONTEND_DIR,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        shell=IS_WINDOWS,
+        **POPEN_KWARGS,
+    )
+    for line in result.stdout.splitlines():
+        log(f"[FRONTEND-BUILD] {line.strip()}")
+    return result.returncode == 0
+
+
+def run_frontend():
+    """Lance le frontend React. En mode production : build une seule fois
+    (npm run build) puis sert les fichiers statiques déjà générés avec
+    'npm run preview', au lieu de relancer le serveur de dev Vite (qui
+    recompile/pré-bundle les dépendances) à chaque démarrage."""
+    log(f"🚀 Démarrage du frontend React... ({FRONTEND_DIR})")
+    if not os.path.isdir(FRONTEND_DIR):
+        log(f"❌ Dossier frontend introuvable : {FRONTEND_DIR}")
+        return
+
+    dist_dir = os.path.join(FRONTEND_DIR, "dist")
+    if not os.path.isdir(dist_dir):
+        if not build_frontend_dist():
+            log("❌ Échec du build frontend, voir les lignes [FRONTEND-BUILD] ci-dessus.")
+            return
+
+    process = subprocess.Popen(
+        "npm run preview -- --host --port 5173 --strictPort",
+        cwd=FRONTEND_DIR,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        shell=IS_WINDOWS,
+        **POPEN_KWARGS,
+    )
+    for line in process.stdout:
+        log(f"[FRONTEND] {line.strip()}")
+        if "Local:" in line or "Network:" in line:
+            log("✅ Frontend démarré")
+            frontend_ready.set()
+
+
+if __name__ == "__main__":
+    log("=" * 50)
+    log("📊 FACTURA - Application de traçabilité commerciale")
+    log("=" * 50)
+    log(f"📁 Racine du projet détectée : {PROJECT_ROOT}")
+
+    # Démarrer le backend en arrière-plan
+    backend_thread = threading.Thread(target=run_backend)
+    backend_thread.daemon = True
+    backend_thread.start()
+
+    # Démarrer le frontend en parallèle (Maven et npm n'ont pas besoin de
+    # s'attendre l'un l'autre, ça fait gagner du temps par rapport à un
+    # démarrage strictement séquentiel)
+    frontend_thread = threading.Thread(target=run_frontend)
+    frontend_thread.daemon = True
+    frontend_thread.start()
+
+    # Attendre que les deux soient réellement prêts, avec un timeout de
+    # sécurité (120s) au cas où quelque chose ne démarre jamais, pour ne
+    # pas rester bloqué indéfiniment.
+    backend_ok = backend_ready.wait(timeout=120)
+    frontend_ok = frontend_ready.wait(timeout=30)
+    if not backend_ok:
+        log("⚠️ Le backend n'a pas confirmé son démarrage après 120s, ouverture quand même.")
+    if not frontend_ok:
+        log("⚠️ Le frontend n'a pas confirmé son démarrage après 30s, ouverture quand même.")
+
+    # Ouvrir la fenêtre application (sans barre d'adresse)
+    log("🌐 Ouverture de l'application (fenêtre autonome, comme une app de bureau)...")
+    open_app_window('http://localhost:5173')
+
+    log("📌 L'application est en cours d'exécution.")
+    log("   - Backend: http://localhost:8080")
+    log("   - Frontend: http://localhost:5173")
+
+    try:
+        # Garder le script actif
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        log("👋 Arrêt de l'application...")
+        sys.exit(0)
