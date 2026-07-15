@@ -440,7 +440,7 @@ documents, including the invoice if it exists.
 
 ---
 
-## 12. Support
+## 12. Support:
 
 For any question, installation difficulty, observed issue, or license renewal request,
 contact the software publisher.
