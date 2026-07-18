@@ -1,0 +1,51 @@
+{
+  "name": "factura-desktop",
+  "version": "1.0.0",
+  "description": "Factura - application de traçabilité commerciale (coquille desktop)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^30.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.factura.desktop",
+    "productName": "Factura",
+    "asar": true,
+    "directories": {
+      "output": "dist_installer"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "assets/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/jre",
+        "to": "jre"
+      },
+      {
+        "from": "resources/backend.jar",
+        "to": "backend.jar"
+      }
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Factura"
+    }
+  }
+}
